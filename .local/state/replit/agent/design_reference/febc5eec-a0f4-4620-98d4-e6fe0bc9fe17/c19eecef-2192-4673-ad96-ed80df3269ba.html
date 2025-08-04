@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalDiary PWA - Case Management for Lawyers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    primary: {
+                        50: '#eff6ff',
+                        500: '#3b82f6',
+                        600: '#2563eb',
+                        700: '#1d4ed8',
+                        900: '#1e3a8a'
+                    },
+                    slate: {
+                        50: '#f8fafc',
+                        100: '#f1f5f9',
+                        200: '#e2e8f0',
+                        300: '#cbd5e1',
+                        400: '#94a3b8',
+                        500: '#64748b',
+                        600: '#475569',
+                        700: '#334155',
+                        800: '#1e293b',
+                        900: '#0f172a'
+                    }
+                },
+                fontFamily: {
+                    'sans': ['Inter', 'system-ui', 'sans-serif']
+                }
+            }
+        }
+    };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        .floating-action-btn {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            z-index: 50;
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+        }
+        
+        .offline-indicator {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+        }
+        
+        .sync-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        .case-card:hover {
+            transform: translateY(-2px);
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans">
+    <!-- PWA Status Bar -->
+    <div id="status-bar" class="bg-primary-600 text-white px-4 py-2 text-sm flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <i class="fas fa-wifi text-green-300"></i>
+            <span data-bind="connectionStatus">Online - Synced</span>
+        </div>
+        <div class="flex items-center space-x-1">
+            <i class="fas fa-sync-alt sync-pulse text-xs"></i>
+            <span class="text-xs" data-bind="lastSync">2 min ago</span>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="max-w-md mx-auto bg-white min-h-screen pb-20">
+        
+        <!-- @COMPONENT: TopHeader [currentView: string, title: string] -->
+        <header class="bg-white shadow-sm border-b border-slate-200 px-4 py-4 sticky top-0 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-gavel text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-semibold text-slate-900" data-bind="pageTitle">My Cases</h1>
+                        <p class="text-xs text-slate-500" data-bind="activeCaseCount">12 Active Cases</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button class="p-2 text-slate-500 hover:text-slate-700" data-event="click:openSearch">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="p-2 text-slate-500 hover:text-slate-700" data-event="click:openProfile">
+                        <!-- Professional headshot of a lawyer in business attire -->
+                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150" 
+                             alt="Lawyer profile" class="w-8 h-8 rounded-full object-cover" data-bind="userAvatar" />
+                    </button>
+                </div>
+            </div>
+        </header>
+        <!-- @END_COMPONENT: TopHeader -->
+
+        <!-- @COMPONENT: CaseListView [cases: Case[], activeFilter: string] -->
+        <main class="px-4 py-4">
+            <!-- Filter Tabs -->
+            <div class="flex space-x-1 mb-6 bg-slate-100 p-1 rounded-lg">
+                <button class="flex-1 py-2 px-3 text-sm font-medium rounded-md bg-white text-primary-600 shadow-sm" data-bind="activeTab=='all'">
+                    All Cases
+                </button>
+                <button class="flex-1 py-2 px-3 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900" data-bind="activeTab=='urgent'">
+                    Urgent
+                </button>
+                <button class="flex-1 py-2 px-3 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900" data-bind="activeTab=='shared'">
+                    Shared
+                </button>
+            </div>
+
+            <!-- Cases List -->
+            <!-- @MAP: cases.map(case => ( -->
+            <div class="space-y-4">
+                <!-- Case Card 1 -->
+                <div class="case-card bg-white rounded-xl shadow-sm border border-slate-200 p-4 cursor-pointer" data-event="click:openCase" data-case-id="1">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-slate-900 mb-1" data-bind="case.title">Sharma vs. Industrial Corp</h3>
+                            <p class="text-sm text-slate-600" data-bind="case.court">High Court, Delhi</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full font-medium" data-bind="case.priority">Urgent</span>
+                            <i class="fas fa-share-alt text-slate-400 text-xs" data-implementation="Show if case is shared"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-1 text-slate-600">
+                                <i class="far fa-calendar text-xs"></i>
+                                <span data-bind="case.nextHearing">Dec 15, 2024</span>
+                            </div>
+                            <div class="flex items-center space-x-1 text-slate-600">
+                                <i class="far fa-file-alt text-xs"></i>
+                                <span data-bind="case.entryCount">8 entries</span>
+                            </div>
+                        </div>
+                        <div class="text-slate-400">
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Case Card 2 -->
+                <div class="case-card bg-white rounded-xl shadow-sm border border-slate-200 p-4 cursor-pointer" data-event="click:openCase" data-case-id="2">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-slate-900 mb-1" data-bind="case.title">Property Dispute - Gupta Family</h3>
+                            <p class="text-sm text-slate-600" data-bind="case.court">District Court, Mumbai</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium" data-bind="case.priority">Normal</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-1 text-slate-600">
+                                <i class="far fa-calendar text-xs"></i>
+                                <span data-bind="case.nextHearing">Jan 08, 2025</span>
+                            </div>
+                            <div class="flex items-center space-x-1 text-slate-600">
+                                <i class="far fa-file-alt text-xs"></i>
+                                <span data-bind="case.entryCount">12 entries</span>
+                            </div>
+                        </div>
+                        <div class="text-slate-400">
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Case Card 3 -->
+                <div class="case-card bg-white rounded-xl shadow-sm border border-slate-200 p-4 cursor-pointer" data-event="click:openCase" data-case-id="3">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-slate-900 mb-1" data-bind="case.title">Corporate Law - Tech Merger</h3>
+                            <p class="text-sm text-slate-600" data-bind="case.court">Supreme Court</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full font-medium" data-bind="case.priority">Critical</span>
+                            <i class="fas fa-share-alt text-primary-500 text-xs" data-implementation="Show if case is shared"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-1 text-slate-600">
+                                <i class="far fa-calendar text-xs"></i>
+                                <span data-bind="case.nextHearing">Dec 20, 2024</span>
+                            </div>
+                            <div class="flex items-center space-x-1 text-slate-600">
+                                <i class="far fa-file-alt text-xs"></i>
+                                <span data-bind="case.entryCount">25 entries</span>
+                            </div>
+                        </div>
+                        <div class="text-slate-400">
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_MAP )) -->
+        </main>
+        <!-- @END_COMPONENT: CaseListView -->
+
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="floating-action-btn w-14 h-14 bg-primary-600 hover:bg-primary-700 rounded-full shadow-lg flex items-center justify-center text-white transition-all duration-200" 
+            data-event="click:openNewCaseModal">
+        <i class="fas fa-plus text-lg"></i>
+    </button>
+
+    <!-- @COMPONENT: BottomNavigation [activeTab: string] -->
+    <nav class="bottom-nav bg-white border-t border-slate-200 px-4 py-2">
+        <div class="flex items-center justify-around">
+            <button class="flex flex-col items-center py-2 px-3 text-primary-600" data-nav="cases">
+                <i class="fas fa-briefcase text-lg mb-1"></i>
+                <span class="text-xs font-medium">Cases</span>
+            </button>
+            <button class="flex flex-col items-center py-2 px-3 text-slate-400 hover:text-slate-600" data-nav="calendar">
+                <i class="far fa-calendar text-lg mb-1"></i>
+                <span class="text-xs">Calendar</span>
+            </button>
+            <button class="flex flex-col items-center py-2 px-3 text-slate-400 hover:text-slate-600" data-nav="chamber">
+                <i class="fas fa-users text-lg mb-1"></i>
+                <span class="text-xs">Chamber</span>
+            </button>
+            <button class="flex flex-col items-center py-2 px-3 text-slate-400 hover:text-slate-600" data-nav="documents">
+                <i class="far fa-folder text-lg mb-1"></i>
+                <span class="text-xs">Documents</span>
+            </button>
+            <button class="flex flex-col items-center py-2 px-3 text-slate-400 hover:text-slate-600" data-nav="settings">
+                <i class="fas fa-cog text-lg mb-1"></i>
+                <span class="text-xs">Settings</span>
+            </button>
+        </div>
+    </nav>
+    <!-- @END_COMPONENT: BottomNavigation -->
+
+    <!-- @COMPONENT: DiaryEntryModal [isOpen: boolean, caseId: string] -->
+    <!-- Modal Overlay (Hidden by default, shown when adding diary entry) -->
+    <div id="diary-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-end justify-center min-h-screen p-4">
+            <div class="bg-white rounded-t-2xl w-full max-w-md slide-up">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                    <h2 class="text-lg font-semibold text-slate-900">Add Diary Entry</h2>
+                    <button class="p-2 text-slate-400 hover:text-slate-600" data-event="click:closeDiaryModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <!-- Modal Content -->
+                <div class="p-4 max-h-96 overflow-y-auto">
+                    <form class="space-y-4" data-event="submit:saveDiaryEntry">
+                        <!-- Case Selection -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Case</label>
+                            <select class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" data-bind="selectedCase">
+                                <option>Sharma vs. Industrial Corp</option>
+                                <option>Property Dispute - Gupta Family</option>
+                                <option>Corporate Law - Tech Merger</option>
+                            </select>
+                        </div>
+
+                        <!-- Entry Date -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Entry Date</label>
+                            <input type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" data-bind="entryDate" />
+                        </div>
+
+                        <!-- Hearing Summary -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Hearing Summary</label>
+                            <textarea rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" 
+                                      placeholder="Brief summary of today's proceedings..." data-bind="hearingSummary"></textarea>
+                        </div>
+
+                        <!-- Remarks -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Remarks & Notes</label>
+                            <textarea rows="4" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" 
+                                      placeholder="Detailed notes, observations, action items..." data-bind="remarks"></textarea>
+                        </div>
+
+                        <!-- Next Hearing Date -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Next Hearing Date</label>
+                            <input type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" data-bind="nextHearingDate" />
+                        </div>
+
+                        <!-- File Attachment -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Attach Documents</label>
+                            <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center">
+                                <i class="fas fa-cloud-upload-alt text-2xl text-slate-400 mb-2"></i>
+                                <p class="text-sm text-slate-600">Tap to upload files</p>
+                                <p class="text-xs text-slate-500">PDF, Images (Max 10MB)</p>
+                                <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" data-implementation="Handle file upload" />
+                            </div>
+                        </div>
+
+                        <!-- Privacy Setting -->
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                            <div>
+                                <p class="text-sm font-medium text-slate-700">Share with Chamber</p>
+                                <p class="text-xs text-slate-500">Allow colleagues to view this entry</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer" data-bind="shareWithChamber" />
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="flex space-x-3 pt-4">
+                            <button type="button" class="flex-1 py-3 px-4 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200" data-event="click:saveDraft">
+                                Save Draft
+                            </button>
+                            <button type="submit" class="flex-1 py-3 px-4 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700">
+                                Save Entry
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: DiaryEntryModal -->
+
+    <!-- @COMPONENT: ChamberView [chamberMembers: User[], sharedEntries: DiaryEntry[]] -->
+    <!-- Chamber Collaboration View (Hidden by default) -->
+    <div id="chamber-view" class="max-w-md mx-auto bg-white min-h-screen pb-20 hidden">
+        <header class="bg-white shadow-sm border-b border-slate-200 px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-lg font-semibold text-slate-900">Chamber Colleagues</h1>
+                    <p class="text-sm text-slate-500" data-bind="chamberName">Sharma & Associates</p>
+                </div>
+                <button class="p-2 text-slate-500 hover:text-slate-700" data-event="click:inviteColleague">
+                    <i class="fas fa-user-plus"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="px-4 py-4">
+            <!-- Chamber Members -->
+            <div class="mb-6">
+                <h2 class="text-sm font-medium text-slate-700 mb-3">Chamber Members (4)</h2>
+                <div class="space-y-3">
+                    <!-- @MAP: chamberMembers.map(member => ( -->
+                    <div class="flex items-center space-x-3 p-3 bg-white rounded-lg border border-slate-200">
+                        <!-- Professional headshot of a female lawyer in business attire -->
+                        <img src="https://pixabay.com/get/g0b0da1e5e46de3b189c458a5a4ce81faae4602fa8d0214b22a2434469c346e3c12df2032b1b64d5f575f357315511245d41451ca5427b54155463f3db7b2ec5b_1280.jpg" 
+                             alt="Chamber colleague" class="w-10 h-10 rounded-full object-cover" data-bind="member.avatar" />
+                        <div class="flex-1">
+                            <p class="font-medium text-slate-900" data-bind="member.name">Priya Sharma</p>
+                            <p class="text-sm text-slate-500" data-bind="member.specialization">Corporate Law</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-slate-400" data-bind="member.lastActive">Online</p>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+                </div>
+            </div>
+
+            <!-- Recent Shared Entries -->
+            <div>
+                <h2 class="text-sm font-medium text-slate-700 mb-3">Recent Shared Entries</h2>
+                <div class="space-y-4">
+                    <!-- @MAP: sharedEntries.map(entry => ( -->
+                    <div class="bg-white rounded-lg border border-slate-200 p-4">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center space-x-2">
+                                <!-- Professional headshot of a male lawyer -->
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150" 
+                                     alt="Colleague" class="w-6 h-6 rounded-full object-cover" data-bind="entry.author.avatar" />
+                                <span class="text-sm font-medium text-slate-700" data-bind="entry.author.name">Rajesh Kumar</span>
+                            </div>
+                            <span class="text-xs text-slate-500" data-bind="entry.createdAt">2h ago</span>
+                        </div>
+                        
+                        <h3 class="font-medium text-slate-900 mb-2" data-bind="entry.case.title">Corporate Merger Case Update</h3>
+                        <p class="text-sm text-slate-600 mb-3" data-bind="entry.summary">Court ordered additional documentation. Next hearing scheduled for review of compliance...</p>
+                        
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-4 text-xs text-slate-500">
+                                <span data-bind="entry.case.court">Supreme Court</span>
+                                <span data-bind="entry.nextHearing">Dec 20, 2024</span>
+                            </div>
+                            <button class="text-primary-600 text-sm font-medium" data-event="click:viewEntry">
+                                View Details
+                            </button>
+                        </div>
+                        
+                        <!-- Comments -->
+                        <div class="mt-3 pt-3 border-t border-slate-100">
+                            <div class="flex items-center space-x-2">
+                                <button class="text-xs text-slate-500 hover:text-primary-600" data-event="click:addComment">
+                                    <i class="far fa-comment"></i> Comment
+                                </button>
+                                <span class="text-xs text-slate-400" data-bind="entry.commentCount">2 comments</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+                </div>
+            </div>
+        </main>
+    </div>
+    <!-- @END_COMPONENT: ChamberView -->
+
+    <!-- @COMPONENT: CalendarView [hearings: Hearing[], selectedDate: Date] -->
+    <!-- Calendar View (Hidden by default) -->
+    <div id="calendar-view" class="max-w-md mx-auto bg-white min-h-screen pb-20 hidden">
+        <header class="bg-white shadow-sm border-b border-slate-200 px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-lg font-semibold text-slate-900">Hearing Calendar</h1>
+                    <p class="text-sm text-slate-500">December 2024</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button class="p-2 text-slate-500 hover:text-slate-700" data-event="click:prevMonth">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="p-2 text-slate-500 hover:text-slate-700" data-event="click:nextMonth">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="px-4 py-4">
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-primary-50 rounded-lg p-3 text-center">
+                    <p class="text-2xl font-bold text-primary-600" data-bind="stats.thisWeek">5</p>
+                    <p class="text-xs text-primary-600">This Week</p>
+                </div>
+                <div class="bg-amber-50 rounded-lg p-3 text-center">
+                    <p class="text-2xl font-bold text-amber-600" data-bind="stats.urgent">2</p>
+                    <p class="text-xs text-amber-600">Urgent</p>
+                </div>
+                <div class="bg-green-50 rounded-lg p-3 text-center">
+                    <p class="text-2xl font-bold text-green-600" data-bind="stats.thisMonth">12</p>
+                    <p class="text-xs text-green-600">This Month</p>
+                </div>
+            </div>
+
+            <!-- Upcoming Hearings -->
+            <div>
+                <h2 class="text-sm font-medium text-slate-700 mb-3">Upcoming Hearings</h2>
+                <div class="space-y-3">
+                    <!-- @MAP: upcomingHearings.map(hearing => ( -->
+                    <div class="bg-white rounded-lg border border-slate-200 p-4" data-bind="hearing">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex-1">
+                                <h3 class="font-medium text-slate-900 mb-1" data-bind="hearing.case.title">Sharma vs. Industrial Corp</h3>
+                                <p class="text-sm text-slate-600" data-bind="hearing.court">High Court, Delhi</p>
+                            </div>
+                            <span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full font-medium" data-bind="hearing.urgency">Tomorrow</span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center space-x-4">
+                                <div class="flex items-center space-x-1 text-slate-600">
+                                    <i class="far fa-calendar text-xs"></i>
+                                    <span data-bind="hearing.date">Dec 15, 2024</span>
+                                </div>
+                                <div class="flex items-center space-x-1 text-slate-600">
+                                    <i class="far fa-clock text-xs"></i>
+                                    <span data-bind="hearing.time">10:30 AM</span>
+                                </div>
+                            </div>
+                            <button class="text-primary-600 text-sm font-medium" data-event="click:setReminder">
+                                <i class="far fa-bell"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+                </div>
+            </div>
+        </main>
+    </div>
+    <!-- @END_COMPONENT: CalendarView -->
+
+    <script>
+        // PWA Registration and Basic Interactivity
+        (function() {
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(function(registration) {
+                            console.log('ServiceWorker registration successful');
+                        })
+                        .catch(function(err) {
+                            console.log('ServiceWorker registration failed: ', err);
+                        });
+                });
+            }
+
+            // Basic Navigation State Management
+            let currentView = 'cases';
+            const views = ['cases', 'calendar', 'chamber', 'documents', 'settings'];
+            
+            // Navigation Handler
+            function switchView(viewName) {
+                // Hide all views
+                document.querySelectorAll('[id$="-view"]').forEach(view => {
+                    view.classList.add('hidden');
+                });
+                
+                // Show selected view
+                const targetView = document.getElementById(viewName + '-view');
+                if (targetView) {
+                    targetView.classList.remove('hidden');
+                }
+                
+                // Update navigation state
+                document.querySelectorAll('[data-nav]').forEach(btn => {
+                    btn.classList.remove('text-primary-600');
+                    btn.classList.add('text-slate-400', 'hover:text-slate-600');
+                });
+                
+                const activeBtn = document.querySelector(`[data-nav="${viewName}"]`);
+                if (activeBtn) {
+                    activeBtn.classList.remove('text-slate-400', 'hover:text-slate-600');
+                    activeBtn.classList.add('text-primary-600');
+                }
+                
+                currentView = viewName;
+            }
+
+            // Add Navigation Event Listeners
+            document.querySelectorAll('[data-nav]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const viewName = this.getAttribute('data-nav');
+                    switchView(viewName);
+                });
+            });
+
+            // Modal Management
+            const diaryModal = document.getElementById('diary-modal');
+            const addCaseBtn = document.querySelector('.floating-action-btn');
+            
+            function showDiaryModal() {
+                diaryModal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+            
+            function hideDiaryModal() {
+                diaryModal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+
+            if (addCaseBtn) {
+                addCaseBtn.addEventListener('click', showDiaryModal);
+            }
+
+            document.querySelectorAll('[data-event*="closeDiaryModal"]').forEach(btn => {
+                btn.addEventListener('click', hideDiaryModal);
+            });
+
+            // Offline Status Management
+            function updateConnectionStatus() {
+                const statusElement = document.querySelector('[data-bind="connectionStatus"]');
+                const statusBar = document.getElementById('status-bar');
+                
+                if (navigator.onLine) {
+                    statusElement.textContent = 'Online - Synced';
+                    statusBar.className = statusBar.className.replace('offline-indicator', 'bg-primary-600');
+                } else {
+                    statusElement.textContent = 'Offline - Data Cached';
+                    statusBar.className = statusBar.className.replace('bg-primary-600', 'offline-indicator');
+                }
+            }
+
+            window.addEventListener('online', updateConnectionStatus);
+            window.addEventListener('offline', updateConnectionStatus);
+            
+            // Initial status check
+            updateConnectionStatus();
+
+            // TODO: Implement business logic for:
+            // - Case data management and CRUD operations
+            // - Diary entry creation, editing, and syncing
+            // - File upload and document management
+            // - Chamber collaboration and real-time updates
+            // - Calendar integration and reminder system
+            // - Offline data caching and synchronization
+            // - Push notification handling
+            // - User authentication and session management
+            // - API integration with Firebase/backend services
+            // - Form validation and error handling
+            // - Search and filtering functionality
+            // - Data export and sharing capabilities
+
+        })();
+    </script>
+
+    <!-- PWA Manifest -->
+    <script>
+        // PWA Manifest Configuration
+        const manifestData = {
+            "name": "LegalDiary - Case Management for Lawyers",
+            "short_name": "LegalDiary",
+            "description": "Professional case diary and collaboration tool for lawyers",
+            "start_url": "/",
+            "display": "standalone",
+            "background_color": "#ffffff",
+            "theme_color": "#1e40af",
+            "orientation": "portrait",
+            "scope": "/",
+            "icons": [
+                {
+                    "src": "/icon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                },
+                {
+                    "src": "/icon-512.png", 
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                }
+            ]
+        };
+        
+        // Dynamically create manifest
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = manifestURL;
+        document.head.appendChild(manifestLink);
+    </script>
+</body>
+</html>
