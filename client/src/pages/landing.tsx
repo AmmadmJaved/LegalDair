@@ -1,7 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "react-oidc-context";
 
 export default function Landing() {
+  const auth = useAuth();
+
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -22,7 +25,7 @@ export default function Landing() {
             
             <div className="space-y-4">
               <Button 
-                onClick={() => window.location.href = '/api/login'}
+                onClick={() => auth.signinRedirect()}
                 className="w-full h-12 text-base font-medium"
               >
                 Sign In to Continue

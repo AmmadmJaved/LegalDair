@@ -5,7 +5,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+
 import {
   insertCaseSchema,
   insertDiaryEntrySchema,
@@ -15,6 +15,7 @@ import {
   insertChamberSchema,
   insertChamberMembershipSchema,
 } from "@shared/schema";
+import { verifyGoogleToken } from "./auth";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -37,10 +38,10 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
-  await setupAuth(app);
+  // await setupAuth(app);
 
   // Auth routes
-  app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
+  app.get("/api/auth/user", verifyGoogleToken, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -52,7 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Case routes
-  app.get("/api/cases", isAuthenticated, async (req: any, res) => {
+  app.get("/api/cases", verifyGoogleToken , async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const cases = await storage.getCasesByUser(userId);
@@ -63,7 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/cases", isAuthenticated, async (req: any, res) => {
+  app.post("/api/cases", verifyGoogleToken , async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const caseData = insertCaseSchema.parse({
@@ -78,7 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/cases/:id", isAuthenticated, async (req: any, res) => {
+  app.get("/api/cases/:id", verifyGoogleToken , async (req: any, res) => {
     try {
       const caseRecord = await storage.getCaseById(req.params.id);
       if (!caseRecord) {
@@ -91,7 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/cases/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/cases/:id", verifyGoogleToken , async (req: any, res) => {
     try {
       const updates = insertCaseSchema.partial().parse(req.body);
       const updatedCase = await storage.updateCase(req.params.id, updates);
@@ -102,7 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/cases/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/cases/:id", verifyGoogleToken , async (req: any, res) => {
     try {
       await storage.deleteCase(req.params.id);
       res.json({ message: "Case deleted successfully" });
@@ -113,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Diary entry routes
-  app.get("/api/cases/:caseId/diary-entries", isAuthenticated, async (req: any, res) => {
+  app.get("/api/cases/:caseId/diary-entries", verifyGoogleToken , async (req: any, res) => {
     try {
       const entries = await storage.getDiaryEntriesByCase(req.params.caseId);
       res.json(entries);
@@ -123,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/diary-entries", isAuthenticated, async (req: any, res) => {
+  app.post("/api/diary-entries", verifyGoogleToken , async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const entryData = insertDiaryEntrySchema.parse({
@@ -138,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/diary-entries/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/diary-entries/:id", verifyGoogleToken , async (req: any, res) => {
     try {
       const updates = insertDiaryEntrySchema.partial().parse(req.body);
       const updatedEntry = await storage.updateDiaryEntry(req.params.id, updates);
@@ -149,7 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/diary-entries/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/diary-entries/:id", verifyGoogleToken , async (req: any, res) => {
     try {
       await storage.deleteDiaryEntry(req.params.id);
       res.json({ message: "Diary entry deleted successfully" });
@@ -160,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Document upload routes
-  app.post("/api/documents", isAuthenticated, upload.single("file"), async (req: any, res) => {
+  app.post("/api/documents", verifyGoogleToken , upload.single("file"), async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -187,7 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/cases/:caseId/documents", isAuthenticated, async (req: any, res) => {
+  app.get("/api/cases/:caseId/documents", verifyGoogleToken , async (req: any, res) => {
     try {
       const documents = await storage.getDocumentsByCase(req.params.caseId);
       res.json(documents);
@@ -197,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/documents/:id/download", isAuthenticated, async (req: any, res) => {
+  app.get("/api/documents/:id/download", verifyGoogleToken , async (req: any, res) => {
     try {
       // Implementation for document download would go here
       // This would serve the file from the uploads directory
@@ -209,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chamber routes
-  app.get("/api/chambers", isAuthenticated, async (req: any, res) => {
+  app.get("/api/chambers", verifyGoogleToken , async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const chambers = await storage.getChambersByUser(userId);
@@ -220,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/chambers", isAuthenticated, async (req: any, res) => {
+  app.post("/api/chambers", verifyGoogleToken , async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const chamberData = insertChamberSchema.parse({
@@ -243,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/chambers/:id/members", isAuthenticated, async (req: any, res) => {
+  app.get("/api/chambers/:id/members", verifyGoogleToken , async (req: any, res) => {
     try {
       const members = await storage.getChamberMembers(req.params.id);
       res.json(members);
@@ -253,7 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/chambers/:id/shared-entries", isAuthenticated, async (req: any, res) => {
+  app.get("/api/chambers/:id/shared-entries", verifyGoogleToken , async (req: any, res) => {
     try {
       const sharedEntries = await storage.getSharedDiaryEntries(req.params.id);
       res.json(sharedEntries);
@@ -264,7 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Comment routes
-  app.get("/api/diary-entries/:id/comments", isAuthenticated, async (req: any, res) => {
+  app.get("/api/diary-entries/:id/comments", verifyGoogleToken , async (req: any, res) => {
     try {
       const comments = await storage.getCommentsByDiaryEntry(req.params.id);
       res.json(comments);
@@ -274,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/comments", isAuthenticated, async (req: any, res) => {
+  app.post("/api/comments", verifyGoogleToken , async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const commentData = insertCommentSchema.parse({
@@ -290,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reminder routes
-  app.get("/api/reminders", isAuthenticated, async (req: any, res) => {
+  app.get("/api/reminders", verifyGoogleToken , async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const reminders = await storage.getRemindersByUser(userId);
@@ -301,7 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/reminders/upcoming", isAuthenticated, async (req: any, res) => {
+  app.get("/api/reminders/upcoming", verifyGoogleToken , async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const days = parseInt(req.query.days as string) || 7;
@@ -313,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/reminders", isAuthenticated, async (req: any, res) => {
+  app.post("/api/reminders", verifyGoogleToken , async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const reminderData = insertReminderSchema.parse({
@@ -329,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Calendar routes
-  app.get("/api/calendar/hearings", isAuthenticated, async (req: any, res) => {
+  app.get("/api/calendar/hearings", verifyGoogleToken , async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { startDate, endDate } = req.query;

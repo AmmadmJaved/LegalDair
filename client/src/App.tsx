@@ -3,16 +3,26 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth } from "@/hooks/useAuth";
+// import { useAuth } from "@/hooks/useAuth";
 import Home from "@/pages/home";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
+import { useAuth } from "react-oidc-context";
+import { useEffect } from "react";
+import Callback from "./pages/callback";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+ useEffect(() => {
+   if (!isLoading && !isAuthenticated) {
+     debugger;
+     // Redirect to login or show a message
+   }
+ }, [isLoading, isAuthenticated]);
 
   return (
     <Switch>
+      <Route path="/auth/google/callback" component={Callback} />
       {isLoading || !isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
