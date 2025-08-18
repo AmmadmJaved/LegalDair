@@ -1,20 +1,42 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { CaseCard } from "@/components/case/case-card";
 import { CaseFormModal } from "@/components/case/case-form-modal";
 import { DiaryEntryModal } from "@/components/diary/diary-entry-modal";
 import type { Case } from "@shared/schema";
+import { useAuth } from "react-oidc-context";
 
 export function Cases() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [showCaseModal, setShowCaseModal] = useState(false);
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const auth = useAuth();
+
+
+  async function fetchCases() {
+    const token = auth.user?.id_token; // or access_token depending on your config
+    const res = await fetch("/api/cases", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) throw new Error("Unauthorized");
+    return res.json();
+  }
+
 
   const { data: cases = [], isLoading } = useQuery<Case[]>({
-    queryKey: ["/api/cases"],
-  });
+      queryKey: ["/api/cases"],
+      queryFn: () => fetchCases(),
+    });
+
+  useEffect(() => {
+    if(!isLoading){
+      const caseData = cases as Case[];
+    }
+  }, [isLoading]);
 
   const filteredCases = cases.filter(caseItem => {
     switch (activeFilter) {

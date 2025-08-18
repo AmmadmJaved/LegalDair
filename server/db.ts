@@ -12,6 +12,20 @@ if (!process.env.DATABASE_URL) {
     "DATABASE_URL must be set. Did you forget to provision a database.?",
   );
 }
-
+// Single pool for entire app
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+// Optional: Test DB connection (without ending pool)
+async function testDbConnection() {
+  try {
+    const client = await pool.connect();
+    console.log("✅ Database connection successful");
+    client.release();
+  } catch (error) {
+    console.error("❌ Database connection failed:", error);
+    throw error;
+  }
+}
+testDbConnection();
+
 export const db = drizzle({ client: pool, schema });

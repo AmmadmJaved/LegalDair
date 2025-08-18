@@ -39,11 +39,12 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   // await setupAuth(app);
-
+  // protect everything else
+  app.use("/api", verifyGoogleToken);
   // Auth routes
-  app.get("/api/auth/user", verifyGoogleToken, async (req: any, res) => {
+  app.get("/api/auth/user", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -53,9 +54,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Case routes
-  app.get("/api/cases", verifyGoogleToken , async (req: any, res) => {
+  app.get("/api/cases" , async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      console.log("Fetching cases for user:", req.user);  
+      const userId = req.user.sub;
+      console.log("Bearer ", req.headers.authorization);
       const cases = await storage.getCasesByUser(userId);
       res.json(cases);
     } catch (error) {
@@ -64,22 +67,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/cases", verifyGoogleToken , async (req: any, res) => {
+  app.post("/api/cases", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const caseData = insertCaseSchema.parse({
         ...req.body,
         createdBy: userId,
+        nextHearingDate: new Date(req.body.nextHearingDate),
       });
       const newCase = await storage.createCase(caseData);
       res.json(newCase);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating case:", error);
-      res.status(500).json({ message: "Failed to create case" });
+
+      // For debugging, send the error message back
+      res.status(500).json({ 
+        message: "Failed to create case", 
+        error: error.message || error 
+      });
     }
   });
 
-  app.get("/api/cases/:id", verifyGoogleToken , async (req: any, res) => {
+
+  app.get("/api/cases/:id" , async (req: any, res) => {
     try {
       const caseRecord = await storage.getCaseById(req.params.id);
       if (!caseRecord) {
@@ -92,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/cases/:id", verifyGoogleToken , async (req: any, res) => {
+  app.put("/api/cases/:id" , async (req: any, res) => {
     try {
       const updates = insertCaseSchema.partial().parse(req.body);
       const updatedCase = await storage.updateCase(req.params.id, updates);
@@ -103,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/cases/:id", verifyGoogleToken , async (req: any, res) => {
+  app.delete("/api/cases/:id" , async (req: any, res) => {
     try {
       await storage.deleteCase(req.params.id);
       res.json({ message: "Case deleted successfully" });
@@ -114,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Diary entry routes
-  app.get("/api/cases/:caseId/diary-entries", verifyGoogleToken , async (req: any, res) => {
+  app.get("/api/cases/:caseId/diary-entries" , async (req: any, res) => {
     try {
       const entries = await storage.getDiaryEntriesByCase(req.params.caseId);
       res.json(entries);
@@ -124,9 +134,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/diary-entries", verifyGoogleToken , async (req: any, res) => {
+  app.post("/api/diary-entries" , async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const entryData = insertDiaryEntrySchema.parse({
         ...req.body,
         createdBy: userId,
@@ -139,7 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/diary-entries/:id", verifyGoogleToken , async (req: any, res) => {
+  app.put("/api/diary-entries/:id" , async (req: any, res) => {
     try {
       const updates = insertDiaryEntrySchema.partial().parse(req.body);
       const updatedEntry = await storage.updateDiaryEntry(req.params.id, updates);
@@ -150,7 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/diary-entries/:id", verifyGoogleToken , async (req: any, res) => {
+  app.delete("/api/diary-entries/:id" , async (req: any, res) => {
     try {
       await storage.deleteDiaryEntry(req.params.id);
       res.json({ message: "Diary entry deleted successfully" });
@@ -161,13 +171,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Document upload routes
-  app.post("/api/documents", verifyGoogleToken , upload.single("file"), async (req: any, res) => {
+  app.post("/api/documents" , upload.single("file"), async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const { caseId, diaryEntryId } = req.body;
 
       const documentData = insertDocumentSchema.parse({
@@ -188,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/cases/:caseId/documents", verifyGoogleToken , async (req: any, res) => {
+  app.get("/api/cases/:caseId/documents" , async (req: any, res) => {
     try {
       const documents = await storage.getDocumentsByCase(req.params.caseId);
       res.json(documents);
@@ -198,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/documents/:id/download", verifyGoogleToken , async (req: any, res) => {
+  app.get("/api/documents/:id/download" , async (req: any, res) => {
     try {
       // Implementation for document download would go here
       // This would serve the file from the uploads directory
@@ -210,9 +220,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chamber routes
-  app.get("/api/chambers", verifyGoogleToken , async (req: any, res) => {
+  app.get("/api/chambers" , async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const chambers = await storage.getChambersByUser(userId);
       res.json(chambers);
     } catch (error) {
@@ -221,9 +231,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/chambers", verifyGoogleToken , async (req: any, res) => {
+  app.post("/api/chambers" , async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const chamberData = insertChamberSchema.parse({
         ...req.body,
         createdBy: userId,
@@ -244,7 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/chambers/:id/members", verifyGoogleToken , async (req: any, res) => {
+  app.get("/api/chambers/:id/members" , async (req: any, res) => {
     try {
       const members = await storage.getChamberMembers(req.params.id);
       res.json(members);
@@ -254,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/chambers/:id/shared-entries", verifyGoogleToken , async (req: any, res) => {
+  app.get("/api/chambers/:id/shared-entries", async (req: any, res) => {
     try {
       const sharedEntries = await storage.getSharedDiaryEntries(req.params.id);
       res.json(sharedEntries);
@@ -265,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Comment routes
-  app.get("/api/diary-entries/:id/comments", verifyGoogleToken , async (req: any, res) => {
+  app.get("/api/diary-entries/:id/comments", async (req: any, res) => {
     try {
       const comments = await storage.getCommentsByDiaryEntry(req.params.id);
       res.json(comments);
@@ -275,9 +285,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/comments", verifyGoogleToken , async (req: any, res) => {
+  app.post("/api/comments" , async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const commentData = insertCommentSchema.parse({
         ...req.body,
         createdBy: userId,
@@ -291,9 +301,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reminder routes
-  app.get("/api/reminders", verifyGoogleToken , async (req: any, res) => {
+  app.get("/api/reminders" , async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const reminders = await storage.getRemindersByUser(userId);
       res.json(reminders);
     } catch (error) {
@@ -302,9 +312,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/reminders/upcoming", verifyGoogleToken , async (req: any, res) => {
+  app.get("/api/reminders/upcoming" , async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const days = parseInt(req.query.days as string) || 7;
       const upcomingReminders = await storage.getUpcomingReminders(userId, days);
       res.json(upcomingReminders);
@@ -314,9 +324,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/reminders", verifyGoogleToken , async (req: any, res) => {
+  app.post("/api/reminders" , async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const reminderData = insertReminderSchema.parse({
         ...req.body,
         userId: userId,
@@ -330,9 +340,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Calendar routes
-  app.get("/api/calendar/hearings", verifyGoogleToken , async (req: any, res) => {
+  app.get("/api/calendar/hearings" , async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const { startDate, endDate } = req.query;
       
       const start = startDate ? new Date(startDate as string) : new Date();

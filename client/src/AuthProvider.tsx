@@ -1,11 +1,14 @@
 import { AuthProvider, AuthProviderProps } from "react-oidc-context";
 
 const oidcConfig: AuthProviderProps = {
-  authority: "https://accounts.google.com",
-  client_id: "150878757478-iqqd0h66up4c1ladrhkl9jm7r4f1a241.apps.googleusercontent.com",
-  redirect_uri: "http://localhost:5000/auth/google/callback", // e.g. http://localhost:5173
-  response_type: "code",
-  scope: "openid profile email",
+ authority: import.meta.env.VITE_AUTH_AUTHORITY,
+  client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+  redirect_uri: import.meta.env.VITE_GOOGLE_REDIRECT_URI,
+  client_secret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || "",
+  response_type: import.meta.env.VITE_GOOGLE_RESPONSE_TYPE,
+  scope: import.meta.env.VITE_GOOGLE_SCOPE,
+  loadUserInfo: true,
+  automaticSilentRenew: true,
 };
 
 export function OidcProvider({ children }: { children: React.ReactNode }) {

@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "react-oidc-context";
 
 const caseFormSchema = z.object({
   title: z.string().min(1, "Case title is required"),
@@ -45,7 +46,9 @@ interface CaseFormModalProps {
 export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
+  const auth = useAuth();
+  const token = auth.user?.id_token; // or access_token depending on your config
+  
   const form = useForm<CaseFormData>({
     resolver: zodResolver(caseFormSchema),
     defaultValues: {
@@ -58,10 +61,11 @@ export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
       isPrivate: true,
     },
   });
-
+ 
   const createCaseMutation = useMutation({
     mutationFn: async (data: CaseFormData) => {
-      const response = await apiRequest("POST", "/api/cases", data);
+      const response = await apiRequest("POST", "/api/cases", data, token);
+      debugger;
       return response.json();
     },
     onSuccess: () => {
