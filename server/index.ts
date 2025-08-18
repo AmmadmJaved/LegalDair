@@ -67,10 +67,10 @@ app.use((req, res, next) => {
   // It is the only port that is not firewalled.
 // Use 127.0.0.1 locally, 0.0.0.0 in production
  const port = parseInt(process.env.PORT || "5000", 10);
-  const host =
-    process.env.HOST ||
-    (process.env.NODE_ENV === "development" ? "127.0.0.1" : "0.0.0.0");
-  // const host = process.env.HOST || "0.0.0.0";
+  // const host =
+  //   process.env.HOST ||
+  //   // (process.env.NODE_ENV === "development" ? "127.0.0.1" : "0.0.0.0");
+  const host = process.env.HOST || "0.0.0.0";
 
   server.listen(port, host, () => {
     log(`🚀 Server running at http://${host}:${port}`);
