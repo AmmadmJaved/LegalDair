@@ -2,13 +2,19 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import dotenv from 'dotenv';
-import { verifyGoogleToken } from "./auth";
+import path from "path";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, "dist/public")));
+
+app.get("*", (_, res) => {
+  res.sendFile(path.join(__dirname, "dist/public", "index.html"));
+});
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
