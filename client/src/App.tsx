@@ -15,7 +15,6 @@ function Router() {
   const { isAuthenticated, isLoading } = useAuth();
  useEffect(() => {
    if (!isLoading && !isAuthenticated) {
-     debugger;
      // Redirect to login or show a message
    }
  }, [isLoading, isAuthenticated]);
