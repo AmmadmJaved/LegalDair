@@ -1,4 +1,4 @@
-Dockerfile# ------------------------
+# ------------------------
 # 1. Build client (Vite)
 # ------------------------
 FROM node:22 AS client-builder
