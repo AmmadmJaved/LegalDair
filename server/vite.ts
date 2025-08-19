@@ -21,6 +21,7 @@ export function log(message: string, source = "express") {
 
 export async function setupVite(app: Express, server: Server) {
     // Lazy import Vite so production never loads it
+  if (process.env.NODE_ENV !== "development") return;
   const { createServer: createViteServer, createLogger } = await import("vite");
   const viteLogger = createLogger();
   const serverOptions = {
