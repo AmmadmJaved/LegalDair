@@ -46,7 +46,7 @@ app.use((req, res, next) => {
   });
 
   // Serve the prebuilt client from dist/public
-  const publicPath = path.resolve(process.cwd(), "dist");
+  const publicPath = path.resolve(process.cwd(), "dist", "public");
   app.use(express.static(publicPath));
   app.get("*", (_req, res) => {
     res.sendFile(path.resolve(publicPath, "index.html"));
