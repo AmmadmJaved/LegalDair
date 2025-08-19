@@ -865,7 +865,7 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
     throw err;
   });
-  const publicPath = path2.resolve(process.cwd(), "dist", "public");
+  const publicPath = path2.resolve(process.cwd(), "dist");
   app.use(express.static(publicPath));
   app.get("*", (_req, res) => {
     res.sendFile(path2.resolve(publicPath, "index.html"));
