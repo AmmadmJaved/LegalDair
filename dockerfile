@@ -41,5 +41,5 @@ COPY --from=client-builder /app/dist ./dist/public
 COPY package*.json ./
 RUN npm install --omit=dev
 
-EXPOSE 3000
+EXPOSE 5000
 CMD ["node", "dist/server.js"]
