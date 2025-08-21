@@ -3,25 +3,25 @@
 # -------------------------------
 FROM node:22-alpine AS base
 WORKDIR /app
-ENV NODE_ENV=production
 
 # -------------------------------
 # 2. Build stage
 # -------------------------------
 FROM base AS build
 
-# Copy everything
+# Copy package files first (better caching)
 COPY package*.json ./
-COPY . .
 
-
-# Install all deps (client + server build time)
+# Install ALL deps (including dev)
 RUN npm install
+
+# Copy rest of the code
+COPY . .
 
 # Build client (Vite) → dist/public
 RUN npm run build:client
 
-# Build server (esbuild/tsc) → dist/server.js
+# Build server (tsc/esbuild) → dist/server.js
 RUN npm run build:server
 
 # -------------------------------
@@ -29,13 +29,16 @@ RUN npm run build:server
 # -------------------------------
 FROM base AS runtime
 
-# Copy only what we need from build
+ENV NODE_ENV=production
+
+# Copy only built output + prod deps
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package*.json ./
+
+# Install only prod deps here
+RUN npm install --omit=dev
 
 # Default port
 EXPOSE 5000
 
-# Start server
 CMD ["npm", "start"]
