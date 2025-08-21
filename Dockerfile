@@ -1,33 +1,45 @@
-# ========================
-# Build client (React/Vite)
-# ========================
-FROM node:22-alpine as client
-WORKDIR /client
-
-# Install client dependencies
-COPY client/package*.json ./
-RUN npm install
-
-# Copy client source and build
-COPY client . 
-RUN npm run build
-
-
-# ========================
-# Build server (Node/Express/etc)
-# ========================
-FROM node:22-alpine as server
+# -------------------------------
+# 1. Base image
+# -------------------------------
+FROM node:22-alpine AS base
 WORKDIR /app
 
-# Install only production dependencies for server
-COPY server/package*.json ./
+# -------------------------------
+# 2. Build stage
+# -------------------------------
+FROM base AS build
+
+# Copy package files first (better caching)
+COPY app/package*.json ./
+
+# Install ALL deps (including dev)
+RUN npm install
+
+# Copy rest of the code
+COPY app .
+
+# Build client (Vite) → dist/public
+RUN npm run build:client
+
+# Build server (tsc/esbuild) → dist/server.js
+RUN npm run build:server
+
+# -------------------------------
+# 3. Runtime stage
+# -------------------------------
+FROM base AS runtime
+
+ENV NODE_ENV=production
+
+# Copy only package files first (for caching)
+COPY app/package*.json ./
+# Install only production dependencies
 RUN npm install --omit=dev
 
-# Copy server source code
-COPY server . 
+# Copy built artifacts from build stage
+COPY --from=build /app/dist ./dist
 
-# Copy client build into server's public directory
-COPY --from=client /client/dist ./dist/public
+# Default port
+EXPOSE 5000
 
-# Start the server
-CMD ["node", "dist/server.js"]
+CMD ["npm", "start"]
