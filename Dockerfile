@@ -10,13 +10,14 @@ ENV NODE_ENV=production
 # -------------------------------
 FROM base AS build
 
-# Copy everything
+# Copy package files first (better caching)
 COPY package*.json ./
-COPY . .
-
 
 # Install all deps (client + server build time)
 RUN npm install
+
+# Copy rest of the code
+COPY . .
 
 # Build client (Vite) → dist/public
 RUN npm run build:client
