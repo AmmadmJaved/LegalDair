@@ -37,7 +37,7 @@ COPY package*.json ./
 RUN npm install --omit=dev
 
 # Copy built artifacts from build stage
-COPY --from=build /dist ./dist
+COPY --from=build /app/dist ./dist
 
 # Default port
 EXPOSE 5000
