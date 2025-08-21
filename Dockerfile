@@ -31,12 +31,13 @@ FROM base AS runtime
 
 ENV NODE_ENV=production
 
-# Copy only built output + prod deps
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/package*.json ./
-
-# Install only prod deps here
+# Copy only package files first (for caching)
+COPY package*.json ./
+# Install only production dependencies
 RUN npm install --omit=dev
+
+# Copy built artifacts from build stage
+COPY --from=build /app/dist ./dist
 
 # Default port
 EXPOSE 5000
