@@ -13,10 +13,10 @@ FROM base AS build
 # Copy package files first (better caching)
 COPY package*.json ./
 
-# Install all deps (client + server build time)
-RUN npm install
+# Install all dependencies (including dev for build)
+RUN npm ci
 
-# Copy rest of the code
+# Copy rest of the project
 COPY . .
 
 # Build client (Vite) → dist/public
@@ -28,14 +28,16 @@ RUN npm run build:server
 # -------------------------------
 # 3. Runtime stage
 # -------------------------------
-FROM base AS runtime
+FROM node:22-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
 
-# Copy only what we need from build
+# Copy only what's needed from build
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules ./node_modules
 
-# Default port
+# Expose port
 EXPOSE 5000
 
 # Start server
