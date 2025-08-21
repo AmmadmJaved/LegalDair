@@ -11,6 +11,7 @@ FROM base AS build
 
 # Copy package files first (better caching)
 COPY package*.json ./
+COPY vite.config.ts ./
 
 # Install ALL deps (including dev)
 RUN npm install
