@@ -2,10 +2,27 @@ import { useQuery } from "@tanstack/react-query";
 import { ChamberMemberCard } from "@/components/chamber/chamber-member-card";
 import { SharedEntryCard } from "@/components/chamber/shared-entry-card";
 import type { Chamber, User, DiaryEntry } from "@shared/schema";
+import { useAuth } from "react-oidc-context";
 
 export function Chamber() {
+const auth = useAuth();
+
+  async function fetchChambers() {
+    const token = auth.user?.id_token; // or access_token depending on your config
+    const res = await fetch("/api/chambers", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) throw new Error("Unauthorized");
+    return res.json();
+  }
+
+
+
   const { data: chambers = [] } = useQuery<Chamber[]>({
     queryKey: ["/api/chambers"],
+    queryFn: () => fetchChambers(),
   });
 
   const chamber = chambers[0]; // For now, use the first chamber

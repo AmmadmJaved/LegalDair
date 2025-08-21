@@ -10,10 +10,14 @@ import NotFound from "@/pages/not-found";
 import { useAuth } from "react-oidc-context";
 import { useEffect } from "react";
 import Callback from "./pages/callback";
+import.meta.env;
+
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
  useEffect(() => {
+
+  console.log("VITE env check:", import.meta.env.VITE_AUTH_AUTHORITY);
    if (!isLoading && !isAuthenticated) {
      // Redirect to login or show a message
    }

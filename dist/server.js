@@ -871,8 +871,7 @@ app.use((req, res, next) => {
     res.sendFile(path2.resolve(publicPath, "index.html"));
   });
   const port = parseInt(process.env.PORT || "5000", 10);
-  const host = process.env.HOST || "0.0.0.0";
-  server.listen(port, host, () => {
-    console.log(`\u{1F680} Server running at http://${host}:${port}`);
+  server.listen(port, () => {
+    console.log(`\u{1F680} Server running on port ${port}`);
   });
 })();

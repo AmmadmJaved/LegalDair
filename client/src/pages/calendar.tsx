@@ -1,10 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
 import { HearingCard } from "@/components/calendar/hearing-card";
 import type { Case } from "@shared/schema";
+import { useAuth } from "react-oidc-context";
 
 export function Calendar() {
+
+  const auth = useAuth();
+
+  async function fetchCalendar() {
+    const token = auth.user?.id_token; // or access_token depending on your config
+    const res = await fetch("/api/calendar/hearings", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error("Unauthorized");
+      return res.json();
+    }
   const { data: hearings = [], isLoading } = useQuery<Case[]>({
     queryKey: ["/api/calendar/hearings"],
+    queryFn: () => fetchCalendar(),
   });
 
   const today = new Date();

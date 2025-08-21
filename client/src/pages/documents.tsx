@@ -2,12 +2,24 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { Document, Case } from "@shared/schema";
+import { useAuth } from "react-oidc-context";
 
 export function Documents() {
+  const auth = useAuth();
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
-
+    async function fetchCases() {
+    const token = auth.user?.id_token; // or access_token depending on your config
+    const res = await fetch("/api/cases", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) throw new Error("Unauthorized");
+    return res.json();
+  }
   const { data: cases = [] } = useQuery<Case[]>({
     queryKey: ["/api/cases"],
+    queryFn: () => fetchCases(),
   });
 
   const { data: documents = [] } = useQuery<Document[]>({

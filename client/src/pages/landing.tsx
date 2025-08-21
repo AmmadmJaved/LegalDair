@@ -25,10 +25,19 @@ export default function Landing() {
             
             <div className="space-y-4">
               <Button 
-                onClick={() => auth.signinRedirect()}
+                onClick={() => {
+                        console.log("✅ Button clicked");
+                        if (!auth || !auth.signinRedirect) {
+                          console.error("auth is not ready", auth);
+                          return;
+                        }
+                        auth.signinRedirect().catch((err: any) => {
+                          console.error("signinRedirect failed", err);
+                        });
+                      }}
                 className="w-full h-12 text-base font-medium"
               >
-                Sign In to Continue
+                Sign In to Continues
               </Button>
               
               <div className="flex items-center space-x-4 text-sm text-slate-500">

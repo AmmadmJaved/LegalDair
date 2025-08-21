@@ -1,4 +1,4 @@
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthProvider } from "@/hooks/useAuth";
 import type { User } from "@shared/schema";
 import { StatusBar } from "@/components/pwa/status-bar";
 import { TopHeader } from "@/components/layout/top-header";
@@ -11,7 +11,7 @@ import { Settings } from "./settings";
 import { useState } from "react";
 
 export default function Home() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading } = useAuthProvider();
   const [activeTab, setActiveTab] = useState("cases");
 
   if (isLoading) {

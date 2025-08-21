@@ -1,11 +1,11 @@
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthProvider } from "@/hooks/useAuth";
 import type { User } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 export function Settings() {
-  const { user } = useAuth();
+  const { user } = useAuthProvider();
   const typedUser = user as User;
 
   const handleLogout = () => {
