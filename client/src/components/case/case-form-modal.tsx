@@ -134,7 +134,7 @@ export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
                 <FormItem>
                   <FormLabel>Court</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., High Court, Delhi" {...field} />
+                    <Input placeholder="e.g., High Court, Islamabad" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
