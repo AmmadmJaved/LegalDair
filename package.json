@@ -8,7 +8,8 @@
     "build:client": "vite build --outDir dist/public",
     "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/server.js",
     "build": "npm run build:client && npm run build:server",
-    "start": "node dist/server.js",
+    "start": "NODE_ENV=production node dist/server.js",
+    "postinstall": "npm run build",
     "check": "tsc",
     "db:push": "drizzle-kit push"
   },
