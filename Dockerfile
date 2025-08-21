@@ -10,13 +10,13 @@ WORKDIR /app
 FROM base AS build
 
 # Copy package files first (better caching)
-COPY app/package*.json ./
+COPY package*.json ./
 
 # Install ALL deps (including dev)
 RUN npm install
 
 # Copy rest of the code
-COPY app .
+COPY . .
 
 # Build client (Vite) → dist/public
 RUN npm run build:client
@@ -32,12 +32,12 @@ FROM base AS runtime
 ENV NODE_ENV=production
 
 # Copy only package files first (for caching)
-COPY app/package*.json ./
+COPY package*.json ./
 # Install only production dependencies
 RUN npm install --omit=dev
 
 # Copy built artifacts from build stage
-COPY --from=build /app/dist ./dist
+COPY --from=build /dist ./dist
 
 # Default port
 EXPOSE 5000
