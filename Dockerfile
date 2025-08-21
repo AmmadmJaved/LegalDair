@@ -12,9 +12,8 @@ FROM base AS build
 
 # Copy everything
 COPY package*.json ./
-COPY client ./client
-COPY server ./server
-COPY tsconfig*.json ./
+COPY . .
+
 
 # Install all deps (client + server build time)
 RUN npm install
