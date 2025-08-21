@@ -14,7 +14,7 @@ FROM base AS build
 COPY package*.json ./
 
 # Install all dependencies (including dev for build)
-RUN npm ci
+RUN npm install
 
 # Copy rest of the project
 COPY . .
