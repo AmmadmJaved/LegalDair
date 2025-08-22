@@ -15,18 +15,14 @@ import.meta.env;
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
- useEffect(() => {
-
-  console.log("VITE env check:", import.meta.env.VITE_AUTH_AUTHORITY);
-   if (!isLoading && !isAuthenticated) {
-     // Redirect to login or show a message
-   }
- }, [isLoading, isAuthenticated]);
-
+  if (isLoading) {
+    // Show nothing or a loading spinner while checking stored token
+    return <div>Loading...</div>;
+  }
   return (
     <Switch>
       <Route path="/auth/google/callback" component={Callback} />
-      {isLoading || !isAuthenticated ? (
+      {!isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
         <>
