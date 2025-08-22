@@ -19,14 +19,16 @@ function Router() {
     // Show nothing or a loading spinner while checking stored token
     return <div>Loading...</div>;
   }
+
+  
   return (
     <Switch>
       <Route path="/auth/google/callback" component={Callback} />
-      {!isAuthenticated ? (
-        <Route path="/" component={Landing} />
+      {isAuthenticated ? (
+        <Route path="/" component={Home} />
       ) : (
         <>
-          <Route path="/" component={Home} />
+          <Route path="/" component={Landing} />
         </>
       )}
       <Route component={NotFound} />

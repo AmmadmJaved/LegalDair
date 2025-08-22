@@ -13,7 +13,7 @@ const oidcConfig: AuthProviderProps = {
     access_type: "offline",
     prompt: "consent"
   },
-  loadUserInfo: true,
+  loadUserInfo: false,
   automaticSilentRenew: true,
 };
 
