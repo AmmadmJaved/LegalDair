@@ -140,6 +140,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const entryData = insertDiaryEntrySchema.parse({
         ...req.body,
         createdBy: userId,
+        entryDate: new Date(req.body.entryDate),
+        nextHearingDate: new Date(req.body.nextHearingDate),
       });
       const newEntry = await storage.createDiaryEntry(entryData);
       res.json(newEntry);

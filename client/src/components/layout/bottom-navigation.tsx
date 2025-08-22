@@ -5,8 +5,9 @@ interface BottomNavigationProps {
 
 export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationProps) {
   const tabs = [
-    { id: "cases", icon: "fas fa-briefcase", label: "Cases" },
+    
     { id: "calendar", icon: "far fa-calendar", label: "Calendar" },
+    { id: "cases", icon: "fas fa-briefcase", label: "Cases" },
     { id: "chamber", icon: "fas fa-users", label: "Chamber" },
     { id: "documents", icon: "far fa-folder", label: "Documents" },
     { id: "settings", icon: "fas fa-cog", label: "Settings" },

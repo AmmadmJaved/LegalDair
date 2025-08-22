@@ -12,7 +12,7 @@ import { useState } from "react";
 
 export default function Home() {
   const { user, isLoading } = useAuthProvider();
-  const [activeTab, setActiveTab] = useState("cases");
+  const [activeTab, setActiveTab] = useState("calendar");
 
   if (isLoading) {
     return (
@@ -27,10 +27,10 @@ export default function Home() {
 
   const renderActiveView = () => {
     switch (activeTab) {
-      case "cases":
-        return <Cases />;
       case "calendar":
         return <Calendar />;
+      case "cases":
+        return <Cases />;   
       case "chamber":
         return <Chamber />;
       case "documents":
@@ -38,7 +38,7 @@ export default function Home() {
       case "settings":
         return <Settings />;
       default:
-        return <Cases />;
+        return <Calendar />;
     }
   };
 

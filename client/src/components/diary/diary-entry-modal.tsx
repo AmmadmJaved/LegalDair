@@ -25,6 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Case } from "@shared/schema";
+import { useAuth } from "react-oidc-context";
 
 const diaryEntryFormSchema = z.object({
   caseId: z.string().min(1, "Case selection is required"),
@@ -47,6 +48,8 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+   const auth = useAuth();
+    const token = auth.user?.id_token; // or access_token depending on your config
 
   const { data: cases = [] } = useQuery<Case[]>({
     queryKey: ["/api/cases"],
@@ -59,14 +62,16 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
       entryDate: new Date().toISOString().split('T')[0],
       hearingSummary: "",
       remarks: "",
-      nextHearingDate: "",
+      nextHearingDate: new Date().toISOString(),
       isSharedWithChamber: false,
     },
   });
 
+  
+
   const createDiaryEntryMutation = useMutation({
     mutationFn: async (data: DiaryEntryFormData) => {
-      const response = await apiRequest("POST", "/api/diary-entries", data);
+      const response = await apiRequest("POST", "/api/diary-entries", data, token);
       return response.json();
     },
     onSuccess: async (newEntry) => {
@@ -75,8 +80,8 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
         const formData = new FormData();
         formData.append("file", selectedFile);
         formData.append("diaryEntryId", newEntry.id);
-        
-        await apiRequest("POST", "/api/documents", formData);
+
+        await apiRequest("POST", "/api/documents", formData, token);
       }
 
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
@@ -120,12 +125,28 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            
+
+            <FormField
+              control={form.control}
+              name="entryDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Previous Date</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="caseId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Case</FormLabel>
+                  <FormLabel>Case Title</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -140,20 +161,6 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="entryDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Entry Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

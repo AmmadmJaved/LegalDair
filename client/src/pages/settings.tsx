@@ -3,9 +3,11 @@ import type { User } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "react-oidc-context";
 
 export function Settings() {
   const { user } = useAuthProvider();
+  const auth = useAuth();
   const typedUser = user as User;
 
   const handleLogout = () => {
@@ -100,7 +102,7 @@ export function Settings() {
           <CardContent className="pt-6">
             <Button 
               variant="destructive" 
-              onClick={handleLogout}
+              onClick={() => auth.signoutRedirect({ post_logout_redirect_uri: window.location.origin })}
               className="w-full"
             >
               Sign Out

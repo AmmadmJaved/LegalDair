@@ -2,9 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { HearingCard } from "@/components/calendar/hearing-card";
 import type { Case } from "@shared/schema";
 import { useAuth } from "react-oidc-context";
+import { DiaryEntryModal } from "@/components/diary/diary-entry-modal";
+import { useState } from "react";
 
 export function Calendar() {
-
+  const [showDiaryModal, setShowDiaryModal] = useState(false);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const auth = useAuth();
 
   async function fetchCalendar() {
@@ -65,45 +68,66 @@ export function Calendar() {
   }
 
   return (
-    <div className="px-4 py-4">
-      {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-primary-50 rounded-lg p-3 text-center">
-          <p className="text-2xl font-bold text-primary-600">{thisWeek.length}</p>
-          <p className="text-xs text-primary-600">This Week</p>
+    <>
+      <div className="px-4 py-4">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-primary-50 rounded-lg p-3 text-center">
+            <p className="text-2xl font-bold text-primary-600">{thisWeek.length}</p>
+            <p className="text-xs text-primary-600">This Week</p>
+          </div>
+          <div className="bg-amber-50 rounded-lg p-3 text-center">
+            <p className="text-2xl font-bold text-amber-600">{urgent.length}</p>
+            <p className="text-xs text-amber-600">Urgent</p>
+          </div>
+          <div className="bg-green-50 rounded-lg p-3 text-center">
+            <p className="text-2xl font-bold text-green-600">{thisMonth.length}</p>
+            <p className="text-xs text-green-600">This Month</p>
+          </div>
         </div>
-        <div className="bg-amber-50 rounded-lg p-3 text-center">
-          <p className="text-2xl font-bold text-amber-600">{urgent.length}</p>
-          <p className="text-xs text-amber-600">Urgent</p>
-        </div>
-        <div className="bg-green-50 rounded-lg p-3 text-center">
-          <p className="text-2xl font-bold text-green-600">{thisMonth.length}</p>
-          <p className="text-xs text-green-600">This Month</p>
-        </div>
-      </div>
 
-      {/* Upcoming Hearings */}
-      <div>
-        <h2 className="text-sm font-medium text-slate-700 mb-3">Upcoming Hearings</h2>
-        <div className="space-y-3">
-          {hearings.length > 0 ? (
-            hearings
-              .filter(hearing => hearing.nextHearingDate)
-              .sort((a, b) => 
-                new Date(a.nextHearingDate!).getTime() - new Date(b.nextHearingDate!).getTime()
-              )
-              .map(hearing => (
-                <HearingCard key={hearing.id} hearing={hearing} />
-              ))
-          ) : (
-            <div className="text-center py-12">
-              <i className="far fa-calendar text-4xl text-slate-300 mb-4"></i>
-              <h3 className="text-lg font-medium text-slate-600 mb-2">No upcoming hearings</h3>
-              <p className="text-slate-500">All your cases are up to date</p>
-            </div>
-          )}
+        {/* Upcoming Hearings */}
+        <div>
+          <h2 className="text-sm font-medium text-slate-700 mb-3">Upcoming Hearings</h2>
+          <div className="space-y-3">
+            {hearings.length > 0 ? (
+              hearings
+                .filter(hearing => hearing.nextHearingDate)
+                .sort((a, b) => 
+                  new Date(a.nextHearingDate!).getTime() - new Date(b.nextHearingDate!).getTime()
+                )
+                .map(hearing => (
+                  <HearingCard key={hearing.id} hearing={hearing} />
+                ))
+            ) : (
+              <div className="text-center py-12">
+                <i className="far fa-calendar text-4xl text-slate-300 mb-4"></i>
+                <h3 className="text-lg font-medium text-slate-600 mb-2">No upcoming hearings</h3>
+                <p className="text-slate-500">All your cases are up to date</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+     {/* Floating Action Button */}
+          <button
+            onClick={() => setShowDiaryModal(true)}
+            className="fixed bottom-24 right-4 w-14 h-14 bg-primary-600 hover:bg-primary-700 rounded-full shadow-lg flex items-center justify-center text-white transition-all duration-200 z-50"
+          >
+            <i className="fas fa-plus text-lg"></i>
+          </button>
+    
+          {/* Modals */}
+          
+          <DiaryEntryModal
+            isOpen={showDiaryModal}
+            onClose={() => {
+              setShowDiaryModal(false);
+              setSelectedCaseId(null);
+            }}
+            caseId={selectedCaseId}
+          />
+    </>
+   
   );
 }
