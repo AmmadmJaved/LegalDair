@@ -72,7 +72,7 @@ export interface IStorage {
   markReminderAsRead(id: string): Promise<void>;
 
   // Calendar operations
-  getHearingsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<Case[]>;
+  getHearingsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<DiaryEntry[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -337,18 +337,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Calendar operations
-  async getHearingsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<Case[]> {
+  async getHearingsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<DiaryEntry[]> {
     return await db
-      .select()
-      .from(cases)
+       .select({
+      id: diaryEntries.id,
+      createdAt: diaryEntries.createdAt,
+      updatedAt: diaryEntries.updatedAt,
+      nextHearingDate: diaryEntries.nextHearingDate,
+      createdBy: diaryEntries.createdBy,
+      caseId: diaryEntries.caseId,
+      entryDate: diaryEntries.entryDate,
+      hearingSummary: diaryEntries.hearingSummary,
+      remarks: diaryEntries.remarks,
+      isSharedWithChamber: diaryEntries.isSharedWithChamber,
+      title: cases.title, // ✅ only bring this from cases
+    })
+      .from(diaryEntries)
+      .innerJoin(cases, eq(diaryEntries.caseId, cases.id))
       .where(
         and(
-          eq(cases.createdBy, userId),
-          gte(cases.nextHearingDate, startDate),
-          lte(cases.nextHearingDate, endDate)
+          eq(diaryEntries.createdBy, userId),
+          gte(diaryEntries.nextHearingDate, startDate),
+          lte(diaryEntries.nextHearingDate, endDate)
         )
       )
-      .orderBy(cases.nextHearingDate);
+      .orderBy(diaryEntries.nextHearingDate);
   }
 }
 
