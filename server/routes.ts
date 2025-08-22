@@ -254,6 +254,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add this after your existing chamber routes
+app.post("/api/chambers/:id/members", async (req: any, res) => {
+  try {
+    const adminId = req.user.sub;
+    const chamberId = req.params.id;
+    const { email, role = "member" } = req.body;
+
+    // Check if the requestor is an admin of the chamber
+    const membership = await storage.getChamberMembership(chamberId, adminId);
+    if (!membership || membership.role !== "admin") {
+      return res.status(403).json({ message: "Only chamber admins can add members" });
+    }
+     // Lookup user by email
+    const user = await storage.getUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Add the new member
+    const newMembership = await storage.addChamberMember({
+      chamberId,
+      userId: user.id,
+      role,
+    });
+
+    res.json({
+      ...newMembership,
+      user, // include profile info in response
+    });
+  } catch (error) {
+    console.error("Error adding chamber member:", error);
+    res.status(500).json({ message: "Failed to add chamber member" });
+  }
+});
+
   app.get("/api/chambers/:id/members" , async (req: any, res) => {
     try {
       const members = await storage.getChamberMembers(req.params.id);
