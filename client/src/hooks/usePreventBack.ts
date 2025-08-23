@@ -6,6 +6,9 @@ export function usePreventBack() {
   const auth = useAuth();
 
   useEffect(() => {
+    if (auth.isAuthenticated) {
+      window.history.replaceState({}, document.title, "/");
+    }
     const handler = (event: PopStateEvent) => {
       if (auth.isAuthenticated && document.referrer.includes("accounts.google.com")) {
         window.history.go(1); // block going back

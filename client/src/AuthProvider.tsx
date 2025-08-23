@@ -18,7 +18,7 @@ const oidcConfig: AuthProviderProps = {
   automaticSilentRenew: true,
   monitorSession: true,
   // 👇 Persist login in localStorage
-  // userStore: new WebStorageStateStore({ store: window.localStorage }),
+  userStore: new WebStorageStateStore({ store: window.localStorage }),
 };
 
 export function OidcProvider({ children }: { children: React.ReactNode }) {
