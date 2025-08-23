@@ -20,10 +20,27 @@ export function Calendar() {
       if (!res.ok) throw new Error("Unauthorized");
       return res.json();
     }
+
   const { data: hearings = [], isLoading } = useQuery<Case[]>({
     queryKey: ["/api/calendar/hearings"],
     queryFn: () => fetchCalendar(),
   });
+   async function fetchCases() {
+    const token = auth.user?.id_token; // or access_token depending on your config
+    const res = await fetch("/api/cases", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) throw new Error("Unauthorized");
+    return res.json();
+  }
+
+
+  const { data: cases = [], isLoading: isLoadingCases } = useQuery<Case[]>({
+      queryKey: ["/api/cases"],
+      queryFn: () => fetchCases(),
+    });
 
   const today = new Date();
   const thisWeek = hearings.filter(hearing => {

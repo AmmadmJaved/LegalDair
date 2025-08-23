@@ -10,17 +10,19 @@ import NotFound from "@/pages/not-found";
 import { useAuth } from "react-oidc-context";
 import { useEffect } from "react";
 import Callback from "./pages/callback";
+import { usePreventBack } from "./hooks/usePreventBack";
 import.meta.env;
 
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) {
-    // Show nothing or a loading spinner while checking stored token
-    return <div>Loading...</div>;
-  }
-
   
+    if (isLoading) {
+      // Show nothing or a loading spinner while checking stored token
+      return <div>Loading...</div>;
+    }
+    usePreventBack();
+
   return (
     <Switch>
       <Route path="/auth/google/callback" component={Callback} />

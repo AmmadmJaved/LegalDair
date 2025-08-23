@@ -25,7 +25,7 @@ import {
   type InsertChamberMembership,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, gte, lte } from "drizzle-orm";
+import { eq, desc, and, or, gte, lte, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations - mandatory for Replit Auth
@@ -135,6 +135,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Diary entry operations
+  // update createDiaryEntry when use select isSharedWithChamber == true then add chamber id as well
+
   async createDiaryEntry(entryData: InsertDiaryEntry): Promise<DiaryEntry> {
     const [entry] = await db.insert(diaryEntries).values(entryData).returning();
     return entry;
@@ -166,7 +168,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(cases, eq(diaryEntries.caseId, cases.id))
       .where(
         and(
-          eq(cases.chamberId, chamberId),
+          // eq(cases.chamberId, chamberId), ToDO implement in future with dairy entry save with chamber
           eq(diaryEntries.isSharedWithChamber, true)
         )
       )
@@ -338,30 +340,46 @@ export class DatabaseStorage implements IStorage {
 
   // Calendar operations
   async getHearingsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<DiaryEntry[]> {
+    // Subquery: get latest updated entry per case
+      const latestPerCase = db
+        .select({
+          caseId: diaryEntries.caseId,
+          maxUpdatedAt: sql`MAX(${diaryEntries.updatedAt})`.as("maxUpdatedAt"),
+        })
+        .from(diaryEntries)
+        .where(
+          and(
+            eq(diaryEntries.createdBy, userId),
+            gte(diaryEntries.nextHearingDate, startDate),
+            lte(diaryEntries.nextHearingDate, endDate)
+          )
+        )
+        .groupBy(diaryEntries.caseId)
+        .as("latestPerCase");
     return await db
        .select({
-      id: diaryEntries.id,
-      createdAt: diaryEntries.createdAt,
-      updatedAt: diaryEntries.updatedAt,
-      nextHearingDate: diaryEntries.nextHearingDate,
-      createdBy: diaryEntries.createdBy,
-      caseId: diaryEntries.caseId,
-      entryDate: diaryEntries.entryDate,
-      hearingSummary: diaryEntries.hearingSummary,
-      remarks: diaryEntries.remarks,
-      isSharedWithChamber: diaryEntries.isSharedWithChamber,
-      title: cases.title, // ✅ only bring this from cases
-    })
+          id: diaryEntries.id,
+          createdAt: diaryEntries.createdAt,
+          updatedAt: diaryEntries.updatedAt,
+          nextHearingDate: diaryEntries.nextHearingDate,
+          createdBy: diaryEntries.createdBy,
+          caseId: diaryEntries.caseId,
+          entryDate: diaryEntries.entryDate,
+          hearingSummary: diaryEntries.hearingSummary,
+          remarks: diaryEntries.remarks,
+          isSharedWithChamber: diaryEntries.isSharedWithChamber,
+          title: cases.title,
+        })
       .from(diaryEntries)
       .innerJoin(cases, eq(diaryEntries.caseId, cases.id))
-      .where(
+      .innerJoin(
+        latestPerCase,
         and(
-          eq(diaryEntries.createdBy, userId),
-          gte(diaryEntries.nextHearingDate, startDate),
-          lte(diaryEntries.nextHearingDate, endDate)
+          eq(diaryEntries.caseId, latestPerCase.caseId),
+          eq(diaryEntries.updatedAt, latestPerCase.maxUpdatedAt)
         )
       )
-      .orderBy(diaryEntries.nextHearingDate);
+      .orderBy(diaryEntries.updatedAt);
   }
 }
 

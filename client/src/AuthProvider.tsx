@@ -1,3 +1,4 @@
+import { WebStorageStateStore } from "oidc-client-ts";
 import { AuthProvider, AuthProviderProps } from "react-oidc-context";
 
 const oidcConfig: AuthProviderProps = {
@@ -15,6 +16,9 @@ const oidcConfig: AuthProviderProps = {
   },
   loadUserInfo: false,
   automaticSilentRenew: true,
+  monitorSession: true,
+  // 👇 Persist login in localStorage
+  userStore: new WebStorageStateStore({ store: window.localStorage }),
 };
 
 export function OidcProvider({ children }: { children: React.ReactNode }) {

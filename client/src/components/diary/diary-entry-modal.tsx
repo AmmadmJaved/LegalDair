@@ -84,7 +84,7 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
         await apiRequest("POST", "/api/documents", formData, token);
       }
 
-      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/calendar/hearings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/diary-entries"] });
       
       toast({
