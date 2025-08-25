@@ -73,6 +73,39 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+   // ✅ Special handling for diary entries POST
+  if (url.pathname.startsWith('/api/diary-entries') && request.method === 'POST') {
+    event.respondWith(
+      (async () => {
+        try {
+          // Try normal network call
+          const response = await fetch(request);
+          return response;
+        } catch (error) {
+          // If offline → save in IndexedDB
+          const cloned = request.clone();
+          const body = await cloned.json();
+          await savePendingDiaryEntry(body);
+
+          // Register background sync
+          if ('sync' in self.registration) {
+            await self.registration.sync.register('sync-diary-entries');
+          }
+
+          // Tell frontend we saved offline
+          return new Response(JSON.stringify({ 
+            message: 'Saved offline. Will sync when online.',
+            offline: true 
+          }), {
+            status: 202,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      })()
+    );
+    return; // stop here, don’t let other handlers catch it
+  }
+
   // Handle API requests
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(handleApiRequest(request));
@@ -313,15 +346,41 @@ async function syncCases() {
   }
 }
 
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('legaldiary-db', 1);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('pendingDiaryEntries')) {
+        db.createObjectStore('pendingDiaryEntries', { keyPath: 'id', autoIncrement: true });
+      }
+    };
+
+    request.onsuccess = (event) => resolve(event.target.result);
+    request.onerror = (event) => reject(event.target.error);
+  });
+}
+
+async function savePendingDiaryEntry(data) {
+  const db = await openDB();
+  const tx = db.transaction('pendingDiaryEntries', 'readwrite');
+  tx.objectStore('pendingDiaryEntries').add({ data });
+  return tx.complete;
+}
+
 // Helper functions for offline storage
 async function getPendingDiaryEntries() {
-  // In a real implementation, you'd use IndexedDB
-  // For now, return empty array
-  return [];
+  const db = await openDB();
+  const tx = db.transaction('pendingDiaryEntries', 'readonly');
+  return tx.objectStore('pendingDiaryEntries').getAll();
 }
 
 async function removePendingDiaryEntry(id) {
-  // Remove from IndexedDB
+  const db = await openDB();
+  const tx = db.transaction('pendingDiaryEntries', 'readwrite');
+  tx.objectStore('pendingDiaryEntries').delete(id);
+  return tx.complete;
 }
 
 async function getPendingCases() {
