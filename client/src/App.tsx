@@ -11,29 +11,36 @@ import { useAuth } from "react-oidc-context";
 import { useEffect } from "react";
 import Callback from "./pages/callback";
 import { usePreventBack } from "./hooks/usePreventBack";
+import { usePushSubscription } from "./hooks/usePushSubscription";
 import.meta.env;
 
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const  { isAuthenticated, isLoading } = useAuth();
   if (isLoading) {
     // Show nothing or a loading spinner while checking stored token
     return <div>Loading...</div>;
   }
   usePreventBack();
+  const subscription = usePushSubscription();
 
   useEffect(() => {
   const handler = (event: PopStateEvent) => {
     if (isAuthenticated && window.location.href.includes("callback")) {
       event.preventDefault();
-      window.history.pushState(null, "", "/"); 
+      window.history.pushState(null, "", "/");
     }
   };
   window.addEventListener("popstate", handler);
 
-  return () => window.removeEventListener("popstate", handler);
-}, [isAuthenticated]);
-  
+    return () => window.removeEventListener("popstate", handler);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    subscription;
+  }, [isAuthenticated]);
+
+    
   return (
     <Switch>
       <Route path="/auth/google/callback" component={Callback} />

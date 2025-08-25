@@ -119,6 +119,18 @@ export const reminders = pgTable("reminders", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Subscriptions table
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id")
+    .references(() => users.id)
+    .notNull(),
+  endpoint: text("endpoint").notNull().unique(), // browser’s push endpoint
+  p256dh: text("p256dh").notNull(), // client key
+  auth: text("auth").notNull(), // client auth secret
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   cases: many(cases),
@@ -214,6 +226,12 @@ export const remindersRelations = relations(reminders, ({ one }) => ({
   }),
 }));
 
+export const pushSubscriptionsRelations = relations(pushSubscriptions, ({ one }) => ({
+  user: one(users, {
+    fields: [pushSubscriptions.userId],
+    references: [users.id],
+  }),
+}));
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
@@ -259,6 +277,11 @@ export const insertChamberMembershipSchema = createInsertSchema(chamberMembershi
   joinedAt: true,
 });
 
+export const insertPushSubscriptionSchema = createInsertSchema(pushSubscriptions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -276,3 +299,5 @@ export type Reminder = typeof reminders.$inferSelect;
 export type InsertReminder = z.infer<typeof insertReminderSchema>;
 export type ChamberMembership = typeof chamberMemberships.$inferSelect;
 export type InsertChamberMembership = z.infer<typeof insertChamberMembershipSchema>;
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;

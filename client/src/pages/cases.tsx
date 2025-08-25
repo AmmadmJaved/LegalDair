@@ -30,13 +30,11 @@ export function Cases() {
   const { data: cases = [], isLoading } = useQuery<Case[]>({
       queryKey: ["/api/cases"],
       queryFn: () => fetchCases(),
+      refetchOnWindowFocus: false, // disable auto refetch on focus
+      refetchOnReconnect: false,   // disable refetch on network reconnect
+      retry: 1, // optional, retry once only
     });
 
-  useEffect(() => {
-    if(!isLoading){
-      const caseData = cases as Case[];
-    }
-  }, [isLoading]);
 
   const filteredCases = cases.filter(caseItem => {
     switch (activeFilter) {

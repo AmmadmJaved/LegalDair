@@ -416,7 +416,7 @@ self.addEventListener('push', (event) => {
       }
     ]
   };
-  
+  console.log('Triggering notification with before options:', options);
   if (event.data) {
     try {
       const payload = event.data.json();
@@ -428,8 +428,11 @@ self.addEventListener('push', (event) => {
   }
   
   event.waitUntil(
-    self.registration.showNotification('LegalDiary', options)
-  );
+  (async () => {
+    console.log('Triggering notification with options:', options);
+    await self.registration.showNotification('LegalDiary', options);
+  })()
+);
 });
 
 // Handle notification clicks

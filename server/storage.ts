@@ -7,6 +7,7 @@ import {
   reminders,
   chambers,
   chamberMemberships,
+  pushSubscriptions,
   type User,
   type UpsertUser,
   type Case,
@@ -23,6 +24,8 @@ import {
   type InsertChamber,
   type ChamberMembership,
   type InsertChamberMembership,
+  type PushSubscription,
+  type InsertPushSubscription,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, gte, lte, sql } from "drizzle-orm";
@@ -73,6 +76,12 @@ export interface IStorage {
 
   // Calendar operations
   getHearingsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<DiaryEntry[]>;
+
+  /// Push subscription operations
+  savePushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription>;
+  getPushSubscriptionsByUser(userId: string): Promise<PushSubscription[]>;
+  deletePushSubscription(endpoint: string): Promise<void>;
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -380,6 +389,31 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(diaryEntries.updatedAt);
+  }
+  // Push subscription operations
+  async savePushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription> {
+    const [record] = await db
+      .insert(pushSubscriptions)
+      .values(subscription)
+      .onConflictDoUpdate({
+        target: pushSubscriptions.endpoint, // unique constraint ensures one row per endpoint
+        set: {
+          userId: subscription.userId,
+          p256dh: subscription.p256dh,
+          auth: subscription.auth,
+          createdAt: new Date(),
+        },
+      })
+      .returning();
+    return record;
+  }
+
+  async getPushSubscriptionsByUser(userId: string): Promise<PushSubscription[]> {
+    return await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+  }
+
+  async deletePushSubscription(endpoint: string): Promise<void> {
+    await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
   }
 }
 

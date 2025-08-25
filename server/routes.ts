@@ -3,8 +3,8 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import multer from "multer";
 import path from "path";
-import fs from "fs/promises";
 import { storage } from "./storage";
+import webpush from "web-push";
 
 import {
   insertCaseSchema,
@@ -16,6 +16,8 @@ import {
   insertChamberMembershipSchema,
 } from "@shared/schema";
 import { verifyGoogleToken } from "./auth";
+
+
 
 // Configure multer for file uploads
 const upload = multer({
@@ -41,6 +43,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // await setupAuth(app);
   // protect everything else
   app.use("/api", verifyGoogleToken);
+
+  // configure webpush once
+  webpush.setVapidDetails(
+    "mailto:ammad.mjaved@gmail.com",
+    process.env.VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
+  );
+
+  // save subscription
+  app.post("/api/subscribe", async (req: any, res) => {
+    try {
+      const userId = (req as any).user?.sub;
+       if (!userId) {
+          return res.status(401).json({ error: "Unauthorized: user not found" });
+        }
+        const subscription = req.body as {
+        endpoint: string;
+        expirationTime?: number | null;
+        keys: {
+          p256dh: string;
+          auth: string;
+        };
+      };
+
+      if (!subscription.endpoint || !subscription.keys?.p256dh || !subscription.keys?.auth) {
+        return res.status(400).json({ error: "Invalid subscription" });
+      }
+      await storage.savePushSubscription({
+        userId,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+      });
+      res.json({ message: "Subscription saved" });
+    } catch (error) {
+      console.error("Error saving subscription:", error);
+      res.status(500).json({ message: "Failed to save subscription" });
+    }
+  });
+
+  // test send notification
+  app.post("/api/notify", async (req: any, res) => {
+    try {
+      const userId = req.user.sub;
+      const subscription = await storage.getPushSubscriptionsByUser(userId);
+
+      if (!subscription) {
+        return res.status(404).json({ message: "No subscription found" });
+      }
+
+      const payload = JSON.stringify({
+        title: req.body.title || "Reminder",
+        body: req.body.body || "You have an upcoming reminder!",
+      });
+
+        // Loop through each subscription
+      for (const sub of subscription) {
+        // Convert DB object to PushSubscription shape
+        const pushSub: webpush.PushSubscription = {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth,
+          },
+        };
+
+        try {
+          await webpush.sendNotification(pushSub, JSON.stringify({
+            title: "New Message",
+            body: "You have a new notification",
+          }));
+        } catch (err) {
+          console.error("Failed to send push:", err);
+          // Optional: remove invalid subscriptions from DB here
+        }
+      }
+      res.json({ message: "Notification sent" });
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      res.status(500).json({ message: "Failed to send notification" });
+    }
+  });
+
+
   // Auth routes
   app.get("/api/auth/user", async (req: any, res) => {
     try {
