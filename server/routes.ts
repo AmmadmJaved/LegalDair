@@ -519,8 +519,7 @@ cron.schedule("* * * * *", async () => {
 
   try {
     // 1. Get hearings from storage (use your existing DB methods)
-    const hearings = await storage.getHearingsByDateRange(
-       // pass null or handle internally to get all users
+    const hearings = await storage.getAllHearingsByDateRange(
       now,
       oneHourLater
     );

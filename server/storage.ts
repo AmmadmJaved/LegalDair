@@ -28,7 +28,7 @@ import {
   type InsertPushSubscription,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, gte, lte, sql } from "drizzle-orm";
+import { eq, desc, and, or, gte, lte, sql, isNull } from "drizzle-orm";
 
 export interface IStorage {
   // User operations - mandatory for Replit Auth
@@ -76,7 +76,7 @@ export interface IStorage {
 
   // Calendar operations
   getHearingsByDateRange(startDate: Date, endDate: Date, userId?: string): Promise<DiaryEntry[]>;
-
+  getAllHearingsByDateRange(startDate: Date, endDate: Date): Promise<DiaryEntry[]>;
   /// Push subscription operations
   savePushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription>;
   getPushSubscriptionsByUser(userId: string): Promise<PushSubscription[]>;
@@ -172,6 +172,7 @@ export class DatabaseStorage implements IStorage {
         createdBy: diaryEntries.createdBy,
         createdAt: diaryEntries.createdAt,
         updatedAt: diaryEntries.updatedAt,
+        lastNotifiedAt: diaryEntries.lastNotifiedAt,
       })
       .from(diaryEntries)
       .innerJoin(cases, eq(diaryEntries.caseId, cases.id))
@@ -348,7 +349,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Calendar operations
-  async getHearingsByDateRange(startDate: Date, endDate: Date,userId?: string): Promise<DiaryEntry[]> {
+  async getHearingsByDateRange(startDate: Date, endDate: Date,userId: string): Promise<DiaryEntry[]> {
     // Subquery: get latest updated entry per case
       const latestPerCase = db
         .select({
@@ -358,7 +359,7 @@ export class DatabaseStorage implements IStorage {
         .from(diaryEntries)
         .where(
           and(
-            ...(userId ? [eq(diaryEntries.createdBy, userId)] : []),
+            eq(diaryEntries.createdBy, userId),
             gte(diaryEntries.nextHearingDate, startDate),
             lte(diaryEntries.nextHearingDate, endDate)
           )
@@ -377,6 +378,7 @@ export class DatabaseStorage implements IStorage {
           hearingSummary: diaryEntries.hearingSummary,
           remarks: diaryEntries.remarks,
           isSharedWithChamber: diaryEntries.isSharedWithChamber,
+          lastNotifiedAt: diaryEntries.lastNotifiedAt,
           title: cases.title,
           userId: diaryEntries.createdBy
         })
@@ -391,6 +393,23 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(diaryEntries.updatedAt);
   }
+
+  async  getAllHearingsByDateRange(start: Date, end: Date): Promise<DiaryEntry[]> {
+  return await db
+    .select()
+    .from(diaryEntries)
+    .where(
+      and(
+        gte(diaryEntries.nextHearingDate, start),
+        lte(diaryEntries.nextHearingDate, end),
+        // ✅ ensures we don’t resend within 1 hour
+        or(
+          isNull(diaryEntries.lastNotifiedAt),
+          sql`${diaryEntries.lastNotifiedAt} < NOW() - INTERVAL '1 hour'`
+        )
+      )
+    );
+}
   // Push subscription operations
   async savePushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription> {
     const [record] = await db

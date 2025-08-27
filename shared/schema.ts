@@ -83,6 +83,8 @@ export const diaryEntries = pgTable("diary_entries", {
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // 👇 add this new column
+  lastNotifiedAt: timestamp("last_notified_at"), 
 });
 
 // Documents table
