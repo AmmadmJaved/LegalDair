@@ -393,46 +393,67 @@ async function removePendingCase(id) {
 }
 
 // Push notification handler
-self.addEventListener('push', (event) => {
-  console.log('Service Worker: Push notification received');
+// self.addEventListener('push', (event) => {
+//   console.log('Service Worker: Push notification received');
   
+//   const options = {
+//     body: 'You have a new hearing reminder',
+//     icon: '/icon-192.png',
+//     badge: '/icon-192.png',
+//     vibrate: [200, 100, 200],
+//     data: {
+//       url: '/?tab=calendar'
+//     },
+//     actions: [
+//       {
+//         action: 'view',
+//         title: 'View Calendar',
+//         icon: '/icon-192.png'
+//       },
+//       {
+//         action: 'dismiss',
+//         title: 'Dismiss'
+//       }
+//     ]
+//   };
+//   console.log('Triggering notification with before options:', options);
+//   if (event.data) {
+//     try {
+//       const payload = event.data.json();
+//       options.body = payload.body || options.body;
+//       options.data = { ...options.data, ...payload.data };
+//     } catch (error) {
+//       console.error('Service Worker: Error parsing push payload', error);
+//     }
+//   }
+  
+//   event.waitUntil(
+//   (async () => {
+//     console.log('Triggering notification with options:', options);
+//     await self.registration.showNotification('LegalDiary', options);
+//   })()
+// );
+// });
+
+// Listen for push events
+self.addEventListener('push', (event) => {
+  console.log('Service Worker: Push received');
+
+  const payload = event.data ? event.data.json() : {};
+  const title = payload.title || 'LegalDiary';
   const options = {
-    body: 'You have a new hearing reminder',
+    body: payload.body || 'You have a new notification',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     vibrate: [200, 100, 200],
-    data: {
-      url: '/?tab=calendar'
-    },
-    actions: [
-      {
-        action: 'view',
-        title: 'View Calendar',
-        icon: '/icon-192.png'
-      },
-      {
-        action: 'dismiss',
-        title: 'Dismiss'
-      }
-    ]
+    data: payload.data || { url: '/?tab=calendar' },
+    actions: payload.actions || [
+      { action: 'view', title: 'View Calendar', icon: '/icon-192.png' },
+      { action: 'dismiss', title: 'Dismiss' },
+    ],
   };
-  console.log('Triggering notification with before options:', options);
-  if (event.data) {
-    try {
-      const payload = event.data.json();
-      options.body = payload.body || options.body;
-      options.data = { ...options.data, ...payload.data };
-    } catch (error) {
-      console.error('Service Worker: Error parsing push payload', error);
-    }
-  }
-  
-  event.waitUntil(
-  (async () => {
-    console.log('Triggering notification with options:', options);
-    await self.registration.showNotification('LegalDiary', options);
-  })()
-);
+
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 // Handle notification clicks
