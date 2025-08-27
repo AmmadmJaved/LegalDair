@@ -5,6 +5,7 @@ import multer from "multer";
 import path from "path";
 import { storage } from "./storage";
 import webpush from "web-push";
+import cron from "node-cron";
 
 import {
   insertCaseSchema,
@@ -470,8 +471,8 @@ app.post("/api/chambers/:id/members", async (req: any, res) => {
       
       const start = startDate ? new Date(startDate as string) : new Date();
       const end = endDate ? new Date(endDate as string) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      
-      const hearings = await storage.getHearingsByDateRange(userId, start, end);
+
+      const hearings = await storage.getHearingsByDateRange(start, end, userId);
       res.json(hearings);
     } catch (error) {
       console.error("Error fetching hearings:", error);
@@ -510,6 +511,59 @@ app.post("/api/chambers/:id/members", async (req: any, res) => {
       console.error("WebSocket error:", error);
     });
   });
+
+  // Run every minute
+cron.schedule("* * * * *", async () => {
+  const now = new Date();
+  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+
+  try {
+    // 1. Get hearings from storage (use your existing DB methods)
+    const hearings = await storage.getHearingsByDateRange(
+       // pass null or handle internally to get all users
+      now,
+      oneHourLater
+    );
+
+    for (const hearing of hearings) {
+      const userId = hearing.createdBy;
+
+      if (!userId) continue; // Skip if userId is null
+
+      // 2. Get user's subscriptions
+      const subscriptions = await storage.getPushSubscriptionsByUser(userId);
+
+      if (!subscriptions?.length) continue;
+
+      // 3. Build payload
+      const payload = JSON.stringify({
+        title: "Upcoming Hearing",
+        body: `Your hearing "${hearing.hearingSummary ?? "Untitled"}" is in 1 hour.`,
+      });
+
+      // 4. Send notification to each subscription
+      for (const sub of subscriptions) {
+        const pushSub: webpush.PushSubscription = {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth,
+          },
+        };
+
+        try {
+          await webpush.sendNotification(pushSub, payload);
+          console.log(`Notification sent to user ${userId} for hearing ${hearing.id}`);
+        } catch (err: any) {
+          console.error("Push send error:", err);
+          // Optionally clean up expired subscriptions here
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Scheduler error:", error);
+  }
+});
 
   return httpServer;
 }

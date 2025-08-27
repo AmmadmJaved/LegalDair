@@ -75,7 +75,7 @@ export interface IStorage {
   markReminderAsRead(id: string): Promise<void>;
 
   // Calendar operations
-  getHearingsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<DiaryEntry[]>;
+  getHearingsByDateRange(startDate: Date, endDate: Date, userId?: string): Promise<DiaryEntry[]>;
 
   /// Push subscription operations
   savePushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription>;
@@ -348,7 +348,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Calendar operations
-  async getHearingsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<DiaryEntry[]> {
+  async getHearingsByDateRange(startDate: Date, endDate: Date,userId?: string): Promise<DiaryEntry[]> {
     // Subquery: get latest updated entry per case
       const latestPerCase = db
         .select({
@@ -358,7 +358,7 @@ export class DatabaseStorage implements IStorage {
         .from(diaryEntries)
         .where(
           and(
-            eq(diaryEntries.createdBy, userId),
+            ...(userId ? [eq(diaryEntries.createdBy, userId)] : []),
             gte(diaryEntries.nextHearingDate, startDate),
             lte(diaryEntries.nextHearingDate, endDate)
           )
@@ -378,6 +378,7 @@ export class DatabaseStorage implements IStorage {
           remarks: diaryEntries.remarks,
           isSharedWithChamber: diaryEntries.isSharedWithChamber,
           title: cases.title,
+          userId: diaryEntries.createdBy
         })
       .from(diaryEntries)
       .innerJoin(cases, eq(diaryEntries.caseId, cases.id))
