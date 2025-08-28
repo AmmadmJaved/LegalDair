@@ -64,7 +64,7 @@ export function Calendar() {
   if (isLoading) {
     return (
       <div className="px-4 py-4">
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-4 mb-6 te">
           {[1, 2, 3].map(i => (
             <div key={i} className="bg-slate-100 rounded-lg p-3 animate-pulse">
               <div className="h-8 bg-slate-200 rounded mb-2"></div>
@@ -89,9 +89,9 @@ export function Calendar() {
       <div className="px-4 py-4">
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-primary-50 rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-primary-600">{thisWeek.length}</p>
-            <p className="text-xs text-primary-600">This Week</p>
+          <div className="bg-primary-50 rounded-lg p-3 text-center text-white">
+            <p className="text-2xl font-bold text-white">{thisWeek.length}</p>
+            <p className="text-xs text-white">This Week</p>
           </div>
           <div className="bg-amber-50 rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-amber-600">{urgent.length}</p>
