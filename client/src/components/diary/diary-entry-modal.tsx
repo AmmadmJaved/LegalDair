@@ -270,7 +270,7 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
               </Button>
               <Button 
                 type="submit" 
-                className="flex-1"
+                className="flex-1 bg-primary-600 hover:bg-primary-700 text-white"
                 disabled={createDiaryEntryMutation.isPending}
               >
                 {createDiaryEntryMutation.isPending ? "Saving..." : "Save Entry"}

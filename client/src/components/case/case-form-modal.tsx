@@ -219,7 +219,7 @@ export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
               </Button>
               <Button 
                 type="submit" 
-                className="flex-1"
+                className="flex-1 bg-primary-600 hover:bg-primary-700 text-white"
                 disabled={createCaseMutation.isPending}
               >
                 {createCaseMutation.isPending ? "Creating..." : "Create Case"}

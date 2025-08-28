@@ -172,7 +172,7 @@ export class DatabaseStorage implements IStorage {
         createdBy: diaryEntries.createdBy,
         createdAt: diaryEntries.createdAt,
         updatedAt: diaryEntries.updatedAt,
-        lastNotifiedAt: diaryEntries.lastNotifiedAt,
+        // lastNotifiedAt: diaryEntries.lastNotifiedAt,
       })
       .from(diaryEntries)
       .innerJoin(cases, eq(diaryEntries.caseId, cases.id))
@@ -378,7 +378,7 @@ export class DatabaseStorage implements IStorage {
           hearingSummary: diaryEntries.hearingSummary,
           remarks: diaryEntries.remarks,
           isSharedWithChamber: diaryEntries.isSharedWithChamber,
-          lastNotifiedAt: diaryEntries.lastNotifiedAt,
+          // lastNotifiedAt: diaryEntries.lastNotifiedAt,
           title: cases.title,
           userId: diaryEntries.createdBy
         })
@@ -403,10 +403,10 @@ export class DatabaseStorage implements IStorage {
         gte(diaryEntries.nextHearingDate, start),
         lte(diaryEntries.nextHearingDate, end),
         // ✅ ensures we don’t resend within 1 hour
-        or(
-          isNull(diaryEntries.lastNotifiedAt),
-          sql`${diaryEntries.lastNotifiedAt} < NOW() - INTERVAL '1 hour'`
-        )
+        // or(
+        //   isNull(diaryEntries.lastNotifiedAt),
+        //   sql`${diaryEntries.lastNotifiedAt} < NOW() - INTERVAL '1 hour'`
+        // )
       )
     );
 }

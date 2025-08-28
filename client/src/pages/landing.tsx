@@ -35,7 +35,7 @@ export default function Landing() {
                           console.error("signinRedirect failed", err);
                         });
                       }}
-                className="w-full h-12 text-base font-medium"
+                className="w-full h-12 text-base font-medium bg-primary-600 hover:bg-primary-700 text-white"
               >
                 Sign In to Continues
               </Button>

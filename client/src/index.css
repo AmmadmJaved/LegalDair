@@ -4,36 +4,36 @@
 
 :root {
   --background: hsl(0, 0%, 100%);
-  --foreground: hsl(240, 10%, 3.9%);
-  --muted: hsl(210, 40%, 98%);
-  --muted-foreground: hsl(215, 16%, 47%);
+  --foreground: hsl(220, 13%, 13%);
+  --muted: hsl(210, 20%, 96%);
+  --muted-foreground: hsl(220, 13%, 45%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(220, 13%, 13%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(240, 10%, 3.9%);
-  --border: hsl(214, 32%, 91%);
-  --input: hsl(214, 32%, 91%);
+  --card-foreground: hsl(220, 13%, 13%);
+  --border: hsl(220, 13%, 91%);
+  --input: hsl(220, 13%, 91%);
   /* --primary: hsl(207, 90%, 54%); */
   --primary-foreground: hsl(210, 40%, 98%);
-  --secondary: hsl(210, 40%, 96%);
+  --secondary: hsl(140, 25%, 95%);
   --secondary-foreground: hsl(222, 84%, 5%);
-  --accent: hsl(210, 40%, 96%);
-  --accent-foreground: hsl(222, 84%, 5%);
+  --accent: hsl(140, 25%, 95%);
+  --accent-foreground: hsl(140, 40%, 20%);
   --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(210, 40%, 98%);
-  --ring: hsl(140 40% 20%);
-  --radius: 0.5rem;
+  --ring: hsl(140, 40%, 20%);
+  --radius: 0.75rem;
 
   /* Legal-specific colors */
-  --primary-50: hsl(214, 100%, 97%);
-  --primary-600: hsl(140 40% 20%);
-  --primary-700: hsl(140 45% 25%);
+  --primary-50: hsl(140, 40%, 20%);
+  --primary-600: hsl(140, 40%, 20%);
+  --primary-700: hsl(140, 45%, 25%);
 
    /* Pakistan Green - Professional and trustworthy */
-    --primary: 140 40% 20%;
-    --primary-foreground: 0 0% 98%;
-    --primary-glow: 140 45% 25%;
-  
+    --primary: 140, 40%, 20%;
+    --primary-foreground: 0, 0%, 98%;
+    --primary-glow: 140, 45%, 25%;
+
   --slate-50: hsl(210, 40%, 98%);
   --slate-100: hsl(210, 40%, 96%);
   --slate-200: hsl(214, 32%, 91%);
@@ -68,8 +68,8 @@
 }
 
 .dark {
-  --background: hsl(240, 10%, 3.9%);
-  --foreground: hsl(0, 0%, 98%);
+  --background: hsl(222.2, 84%, 4.9%);
+  --foreground: hsl(210, 40%, 98%);
   --muted: hsl(240, 3.7%, 15.9%);
   --muted-foreground: hsl(240, 5%, 64.9%);
   --popover: hsl(240, 10%, 3.9%);
@@ -78,7 +78,7 @@
   --card-foreground: hsl(0, 0%, 98%);
   --border: hsl(240, 3.7%, 15.9%);
   --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(207, 90%, 54%);
+  --primary: hsl(140, 40%, 20%);
   --primary-foreground: hsl(222, 84%, 5%);
   --secondary: hsl(240, 3.7%, 15.9%);
   --secondary-foreground: hsl(0, 0%, 98%);
