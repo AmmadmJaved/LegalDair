@@ -17,6 +17,7 @@ import {
   insertChamberMembershipSchema,
 } from "@shared/schema";
 import { verifyGoogleToken } from "./auth";
+import { runHearingJob } from "./job";
 
 
 
@@ -511,58 +512,25 @@ app.post("/api/chambers/:id/members", async (req: any, res) => {
       console.error("WebSocket error:", error);
     });
   });
+   // api for notifications runHearingJob
+   app.post("/api/notifications/hearings", async (req: any, res) => {
+     try {
+       await runHearingJob();
+       res.status(200).json({ message: "Hearing notifications sent" });
+     } catch (error) {
+       console.error("Error sending hearing notifications:", error);
+       res.status(500).json({ message: "Failed to send hearing notifications" });
+     }
+   });
 
-  // Run every minute
-cron.schedule("* * * * *", async () => {
-  const now = new Date();
-  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+// Midnight
+cron.schedule("0 0 * * *", runHearingJob);
 
-  try {
-    // 1. Get hearings from storage (use your existing DB methods)
-    const hearings = await storage.getAllHearingsByDateRange(
-      now,
-      oneHourLater
-    );
+// Morning 6 AM
+cron.schedule("0 6 * * *", runHearingJob);
 
-    for (const hearing of hearings) {
-      const userId = hearing.createdBy;
-
-      if (!userId) continue; // Skip if userId is null
-
-      // 2. Get user's subscriptions
-      const subscriptions = await storage.getPushSubscriptionsByUser(userId);
-
-      if (!subscriptions?.length) continue;
-
-      // 3. Build payload
-      const payload = JSON.stringify({
-        title: "Upcoming Hearing",
-        body: `Your hearing "${hearing.hearingSummary ?? "Untitled"}" is in 1 hour.`,
-      });
-
-      // 4. Send notification to each subscription
-      for (const sub of subscriptions) {
-        const pushSub: webpush.PushSubscription = {
-          endpoint: sub.endpoint,
-          keys: {
-            p256dh: sub.p256dh,
-            auth: sub.auth,
-          },
-        };
-
-        try {
-          await webpush.sendNotification(pushSub, payload);
-          console.log(`Notification sent to user ${userId} for hearing ${hearing.id}`);
-        } catch (err: any) {
-          console.error("Push send error:", err);
-          // Optionally clean up expired subscriptions here
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Scheduler error:", error);
-  }
-});
+// Evening 7 PM
+cron.schedule("0 19 * * *", runHearingJob);
 
   return httpServer;
 }

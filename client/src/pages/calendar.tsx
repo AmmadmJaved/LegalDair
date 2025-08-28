@@ -90,8 +90,8 @@ export function Calendar() {
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-primary-50 rounded-lg p-3 text-center text-white">
-            <p className="text-2xl font-bold text-white">{thisWeek.length}</p>
-            <p className="text-xs text-white">This Week</p>
+            <p className="text-2xl font-bold text-primary-600">{thisWeek.length}</p>
+            <p className="text-xs text-primary-600">This Week</p>
           </div>
           <div className="bg-amber-50 rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-amber-600">{urgent.length}</p>
