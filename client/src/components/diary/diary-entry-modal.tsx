@@ -26,6 +26,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Case } from "@shared/schema";
 import { useAuth } from "react-oidc-context";
+import { CaseFormModal } from "../case/case-form-modal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Info } from "lucide-react";
 
 const diaryEntryFormSchema = z.object({
   caseId: z.string().min(1, "Case selection is required"),
@@ -45,6 +48,7 @@ interface DiaryEntryModalProps {
 }
 
 export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProps) {
+  const [showCaseModal, setShowCaseModal] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -146,19 +150,41 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
               name="caseId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Case Title</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <div className="flex items-center gap-1">
+                  <FormLabel>Select Case Title</FormLabel>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-pointer" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs break-words whitespace-normal">
+                        <p>You must select or create a case before adding a diary entry.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                  <Select
+                    onValueChange={(value) => {
+                      if (value === "new") {
+                        setShowCaseModal(true); // open modal
+                      } else {
+                        field.onChange(value);
+                      }
+                    }}
+                    value={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a case" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {cases.map(caseItem => (
+                      {cases.map((caseItem) => (
                         <SelectItem key={caseItem.id} value={caseItem.id}>
                           {caseItem.title}
                         </SelectItem>
                       ))}
+                      <SelectItem value="new">➕ Add New Case</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -279,6 +305,11 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
           </form>
         </Form>
       </DialogContent>
+      {/* Case Form Modal */}
+      <CaseFormModal
+        isOpen={showCaseModal}
+        onClose={() => setShowCaseModal(false)}
+      />
     </Dialog>
   );
 }

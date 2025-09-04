@@ -70,6 +70,8 @@ export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/calendar/hearings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/diary-entries"] });
       toast({
         title: "Success",
         description: "Case created successfully",
