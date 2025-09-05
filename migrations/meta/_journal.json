@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1755478792162,
-      "tag": "0000_slimy_nomad",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1756145368020,
-      "tag": "0001_reflective_corsair",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1756322009908,
-      "tag": "0002_flimsy_christian_walker",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1756350600023,
-      "tag": "0003_amazing_robin_chapel",
+      "when": 1757079735977,
+      "tag": "0000_safe_ironclad",
       "breakpoints": true
     }
   ]

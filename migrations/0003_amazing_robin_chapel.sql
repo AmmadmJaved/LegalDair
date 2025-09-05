@@ -1,1 +1,0 @@
-ALTER TABLE "diary_entries" DROP COLUMN "last_notified_at";

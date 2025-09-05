@@ -74,7 +74,7 @@ export const cases = pgTable("cases", {
 // Diary entries table
 export const diaryEntries = pgTable("diary_entries", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  caseId: uuid("case_id").references(() => cases.id),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
   entryDate: timestamp("entry_date").notNull(),
   hearingSummary: text("hearing_summary"),
   remarks: text("remarks"),
@@ -92,8 +92,8 @@ export const documents = pgTable("documents", {
   originalName: varchar("original_name", { length: 255 }).notNull(),
   mimeType: varchar("mime_type", { length: 100 }).notNull(),
   size: integer("size").notNull(),
-  caseId: uuid("case_id").references(() => cases.id),
-  diaryEntryId: uuid("diary_entry_id").references(() => diaryEntries.id),
+  caseId: uuid("case_id").references(() => cases.id, { onDelete: "cascade" }),
+  diaryEntryId: uuid("diary_entry_id").references(() => diaryEntries.id, { onDelete: "cascade" }),
   uploadedBy: varchar("uploaded_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -101,7 +101,7 @@ export const documents = pgTable("documents", {
 // Comments table for shared entries
 export const comments = pgTable("comments", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  diaryEntryId: uuid("diary_entry_id").references(() => diaryEntries.id),
+  diaryEntryId: uuid("diary_entry_id").references(() => diaryEntries.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
@@ -111,7 +111,7 @@ export const comments = pgTable("comments", {
 // Reminders table
 export const reminders = pgTable("reminders", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  caseId: uuid("case_id").references(() => cases.id),
+  caseId: uuid("case_id").references(() => cases.id, { onDelete: "cascade" }),
   reminderDate: timestamp("reminder_date").notNull(),
   message: text("message").notNull(),
   isRead: boolean("is_read").default(false),
