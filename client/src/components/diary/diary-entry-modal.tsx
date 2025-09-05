@@ -239,7 +239,11 @@ export function DiaryEntryModal({ isOpen, onClose, caseId, onSuccess }: DiaryEnt
                 <FormItem>
                   <FormLabel>Next Hearing Date</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input
+                      type="date"
+                      {...field}
+                      className="peer"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
