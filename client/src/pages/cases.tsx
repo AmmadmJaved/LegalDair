@@ -14,6 +14,7 @@ export function Cases() {
   const [showCaseModal, setShowCaseModal] = useState(false);
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [isRefreshData, setIsRefreshData] = useState<boolean>(false);
   const auth = useAuth();
   const queryClient = useQueryClient();
 
@@ -57,6 +58,17 @@ export function Cases() {
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
     },
   });
+
+   /// Miantaining fresh data
+  useEffect(() => {
+    if (isRefreshData) {
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ["/api/calendar/hearings"] });
+        queryClient.refetchQueries({ queryKey: ["/api/cases"] });
+        setIsRefreshData(false);
+      }, 500);
+    }
+  }, [isRefreshData, queryClient]);
 
 
   const filteredCases = cases.filter(caseItem => {
@@ -175,6 +187,9 @@ export function Cases() {
           setSelectedCaseId(null);
         }}
         caseId={selectedCaseId}
+         onSuccess={() => {
+              setIsRefreshData(true);
+            }}
       />
     </>
   );

@@ -69,9 +69,13 @@ export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/calendar/hearings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/diary-entries"] });
+
+       setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/calendar/hearings"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/diary-entries"] });
+      }, 500);
+      
       toast({
         title: "Success",
         description: "Case created successfully",

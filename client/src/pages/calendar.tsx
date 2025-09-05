@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HearingCard } from "@/components/calendar/hearing-card";
 import type { Case } from "@shared/schema";
 import { useAuth } from "react-oidc-context";
@@ -8,7 +8,11 @@ import { useEffect, useState } from "react";
 export function Calendar() {
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [isRefreshData, setIsRefreshData] = useState<boolean>(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<"day" | "week" | "month" | "list">("list");
   const auth = useAuth();
+  const queryClient = useQueryClient();
 
   async function fetchCalendar() {
     const token = auth.user?.id_token; // or access_token depending on your config
@@ -50,6 +54,18 @@ export function Calendar() {
       retry: 2,               // do not retry on failure
     });
 
+    /// Miantaining fresh data
+  useEffect(() => {
+    if (isRefreshData) {
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ["/api/calendar/hearings"] });
+        queryClient.refetchQueries({ queryKey: ["/api/cases"] });
+        setIsRefreshData(false);
+      }, 500);
+    }
+  }, [isRefreshData, queryClient]);
+
+
   const today = new Date();
   const thisWeek = hearings.filter(hearing => {
     if (!hearing.nextHearingDate) return false;
@@ -67,6 +83,20 @@ export function Calendar() {
     const hearingDate = new Date(hearing.nextHearingDate);
     return hearingDate.getMonth() === today.getMonth() && 
            hearingDate.getFullYear() === today.getFullYear();
+  });
+
+  const filteredHearings = hearings
+  .filter(hearing => hearing.nextHearingDate)
+  .sort((a, b) => 
+    new Date(a.nextHearingDate!).getTime() - new Date(b.nextHearingDate!).getTime()
+  )
+  .filter(hearing => {
+    const hearingDate = new Date(hearing.nextHearingDate!);
+    return (
+      hearingDate.getFullYear() === currentDate.getFullYear() &&
+      hearingDate.getMonth() === currentDate.getMonth() &&
+      hearingDate.getDate() === currentDate.getDate()
+    );
   });
 
   if (isLoading) {
@@ -110,31 +140,119 @@ export function Calendar() {
             <p className="text-xs text-green-600">This Month</p>
           </div>
         </div>
+        
+        {/* View Mode & Date Navigation */}
+        <div className="flex justify-between items-center mb-4">
+          {/* View Mode Toggle */}
+          <div className="flex bg-slate-100 rounded-full p-1 shadow-sm">
+            <button
+              onClick={() => setViewMode("day")}
+              className={`flex items-center px-3 py-1 rounded-full text-sm transition ${
+                viewMode === "day"
+                  ? "bg-primary-600 text-white shadow"
+                  : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <i className="fas fa-calendar-day mr-1 text-xs"></i> Day
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`flex items-center px-3 py-1 rounded-full text-sm transition ${
+                viewMode === "list"
+                  ? "bg-primary-600 text-white shadow"
+                  : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <i className="fas fa-list mr-1 text-xs"></i> List
+            </button>
+          </div>
+
+          {/* Date Navigation (only for Day view) */}
+          {viewMode === "day" && (
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() =>
+                  setCurrentDate(
+                    new Date(currentDate.getTime() - 24 * 60 * 60 * 1000)
+                  )
+                }
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 shadow-sm"
+              >
+                <i className="fas fa-chevron-left text-slate-600"></i>
+              </button>
+              <span className="font-medium text-slate-700 text-sm">
+                {currentDate.toDateString()}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentDate(
+                    new Date(currentDate.getTime() + 24 * 60 * 60 * 1000)
+                  )
+                }
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 shadow-sm"
+              >
+                <i className="fas fa-chevron-right text-slate-600"></i>
+              </button>
+            </div>
+          )}
+        </div>
+
+          
 
         {/* Upcoming Hearings */}
-        <div>
-          <h2 className="text-sm font-medium text-slate-700 mb-3">Upcoming Hearings</h2>
-          <div className="space-y-3">
-            {hearings.length > 0 ? (
-              hearings
-                .filter(hearing => hearing.nextHearingDate)
-                .sort((a, b) => 
-                  new Date(a.nextHearingDate!).getTime() - new Date(b.nextHearingDate!).getTime()
-                )
-                .map(hearing => (
-                  <HearingCard key={hearing.id} hearing={hearing} />
-                ))
-            ) : (
-              <div className="text-center py-12">
-                <i className="far fa-calendar text-4xl text-slate-300 mb-4"></i>
-                <h3 className="text-lg font-medium text-slate-600 mb-2">No upcoming hearings</h3>
-                <p className="text-slate-500">All your cases are up to date</p>
-              </div>
+          <div>
+            { viewMode === "day" && (
+              <>
+               <h2 className="text-sm font-medium text-slate-700 mb-3"> Hearings on {currentDate.toDateString()}</h2>
+                <div className="space-y-3">
+                  {filteredHearings.length > 0 ? (
+                    filteredHearings
+                      .filter(hearing => hearing.nextHearingDate)
+                      .sort((a, b) => 
+                        new Date(a.nextHearingDate!).getTime() - new Date(b.nextHearingDate!).getTime()
+                      )
+                      .map(hearing => (
+                        <HearingCard key={hearing.id} hearing={hearing} />
+                      ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <i className="far fa-calendar text-4xl text-slate-300 mb-4"></i>
+                      <h3 className="text-lg font-medium text-slate-600 mb-2">No upcoming hearings</h3>
+                      <p className="text-slate-500">All your cases are up to date</p>
+                    </div>
+                  )}
+                
+                </div>
+              </>
+            )}
+
+            {
+              viewMode === "list" && (
+              <>
+                <h2 className="text-sm font-medium text-slate-700 mb-3">Upcoming Hearings</h2>
+                <div className="space-y-3">
+                  {hearings.length > 0 ? (
+                    hearings
+                      .filter(hearing => hearing.nextHearingDate)
+                      .sort((a, b) => 
+                        new Date(a.nextHearingDate!).getTime() - new Date(b.nextHearingDate!).getTime()
+                      )
+                      .map(hearing => (
+                        <HearingCard key={hearing.id} hearing={hearing} />
+                      ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <i className="far fa-calendar text-4xl text-slate-300 mb-4"></i>
+                      <h3 className="text-lg font-medium text-slate-600 mb-2">No upcoming hearings</h3>
+                      <p className="text-slate-500">All your cases are up to date</p>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>
-      </div>
-     {/* Floating Action Button */}
+      {/* Floating Action Button */}
           <button
             onClick={() => setShowDiaryModal(true)}
             className="fixed bottom-24 right-4 w-14 h-14 bg-primary-600 hover:bg-primary-700 rounded-full shadow-lg flex items-center justify-center text-white transition-all duration-200 z-50"
@@ -151,6 +269,9 @@ export function Calendar() {
               setSelectedCaseId(null);
             }}
             caseId={selectedCaseId}
+            onSuccess={() => {
+              setIsRefreshData(true);
+            }}
           />
     </>
    

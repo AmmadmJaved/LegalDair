@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,9 +45,10 @@ interface DiaryEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
   caseId?: string | null;
+  onSuccess?: () => void;
 }
 
-export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProps) {
+export function DiaryEntryModal({ isOpen, onClose, caseId, onSuccess }: DiaryEntryModalProps) {
   const [showCaseModal, setShowCaseModal] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -71,8 +72,6 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
     },
   });
 
-  
-
   const createDiaryEntryMutation = useMutation({
     mutationFn: async (data: DiaryEntryFormData) => {
       const response = await apiRequest("POST", "/api/diary-entries", data, token);
@@ -90,7 +89,7 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
 
         await apiRequest("POST", "/api/documents", formData, token);
       }
-
+      if (onSuccess) onSuccess();
       toast({
         title: "Success",
         description: "Diary entry created successfully",
