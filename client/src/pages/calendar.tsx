@@ -33,33 +33,12 @@ export function Calendar() {
     refetchOnMount: true,         // refresh when component remounts
     refetchOnReconnect: true,     // refresh when network reconnects
   });
-   async function fetchCases() {
-    const token = auth.user?.id_token; // or access_token depending on your config
-    const res = await fetch("/api/cases", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!res.ok) throw new Error("Unauthorized");
-    return res.json();
-  }
-
-  const { data: cases = [], isLoading: isLoadingCases } = useQuery<Case[]>({
-      queryKey: ["/api/cases"],
-      queryFn: () => fetchCases(),
-      staleTime: 0,                 // always considered stale
-      refetchOnWindowFocus: true,   // refresh when tab regains focus
-      refetchOnMount: true,         // refresh when component remounts
-      refetchOnReconnect: true,     // refresh when network reconnects
-      retry: 2,               // do not retry on failure
-    });
 
     /// Miantaining fresh data
   useEffect(() => {
     if (isRefreshData) {
       setTimeout(() => {
         queryClient.refetchQueries({ queryKey: ["/api/calendar/hearings"] });
-        queryClient.refetchQueries({ queryKey: ["/api/cases"] });
         setIsRefreshData(false);
       }, 500);
     }

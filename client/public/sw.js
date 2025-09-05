@@ -119,67 +119,44 @@ self.addEventListener('fetch', (event) => {
 // Handle API requests with cache-first strategy for GET requests
 async function handleApiRequest(request) {
   const url = new URL(request.url);
-  
+
   try {
-    // For GET requests, try cache first, then network
-    if (request.method === 'GET') {
+    // 🔹 Always try the network first
+    const networkResponse = await fetch(request);
+
+    // If network succeeds, update cache (only for GET)
+    if (networkResponse.ok && request.method === "GET") {
+      const cache = await caches.open(DYNAMIC_CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+    }
+
+    return networkResponse;
+
+  } catch (error) {
+    console.log("Service Worker: Network failed, trying cache", error);
+
+    // 🔹 If offline → fallback to cache
+    if (request.method === "GET") {
       const cachedResponse = await caches.match(request);
-      
       if (cachedResponse) {
-        console.log('Service Worker: Serving from cache', url.pathname);
-        
-        // Try to update cache in background
-        fetch(request)
-          .then((response) => {
-            if (response.ok) {
-              return caches.open(DYNAMIC_CACHE_NAME)
-                .then((cache) => cache.put(request, response.clone()));
-            }
-          })
-          .catch(() => {
-            // Background update failed, but we have cached version
-          });
-        
         return cachedResponse;
       }
     }
 
-    // Try network first
-    const networkResponse = await fetch(request);
-    
-    if (networkResponse.ok && request.method === 'GET') {
-      // Cache successful GET responses
-      const cache = await caches.open(DYNAMIC_CACHE_NAME);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-    
-  } catch (error) {
-    console.log('Service Worker: Network failed, trying cache', error);
-    
-    // Network failed, try cache for GET requests
-    if (request.method === 'GET') {
-      const cachedResponse = await caches.match(request);
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-    }
-    
-    // Return offline response for failed requests
+    // 🔹 Final fallback if nothing in cache
     return new Response(
-      JSON.stringify({ 
-        message: 'Offline - Data not available',
+      JSON.stringify({
+        message: "Offline - Data not available",
         offline: true,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       }),
       {
         status: 503,
-        statusText: 'Service Unavailable',
+        statusText: "Service Unavailable",
         headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store'
-        }
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+        },
       }
     );
   }
@@ -248,7 +225,7 @@ async function handleStaticRequest(request) {
             <h1>You're Offline</h1>
             <p>LegalDiary is not available right now. Please check your internet connection and try again.</p>
             <button onclick="window.location.reload()" style="
-              background: #3b82f6; 
+              background: #05582bff; 
               color: white; 
               border: none; 
               padding: 12px 24px; 
