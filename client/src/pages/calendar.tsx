@@ -3,7 +3,7 @@ import { HearingCard } from "@/components/calendar/hearing-card";
 import type { Case } from "@shared/schema";
 import { useAuth } from "react-oidc-context";
 import { DiaryEntryModal } from "@/components/diary/diary-entry-modal";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function Calendar() {
   const [showDiaryModal, setShowDiaryModal] = useState(false);
@@ -24,6 +24,10 @@ export function Calendar() {
   const { data: hearings = [], isLoading } = useQuery<Case[]>({
     queryKey: ["/api/calendar/hearings"],
     queryFn: () => fetchCalendar(),
+    staleTime: 0,                 // always considered stale
+    refetchOnWindowFocus: true,   // refresh when tab regains focus
+    refetchOnMount: true,         // refresh when component remounts
+    refetchOnReconnect: true,     // refresh when network reconnects
   });
    async function fetchCases() {
     const token = auth.user?.id_token; // or access_token depending on your config
@@ -36,10 +40,14 @@ export function Calendar() {
     return res.json();
   }
 
-
   const { data: cases = [], isLoading: isLoadingCases } = useQuery<Case[]>({
       queryKey: ["/api/cases"],
       queryFn: () => fetchCases(),
+      staleTime: 0,                 // always considered stale
+      refetchOnWindowFocus: true,   // refresh when tab regains focus
+      refetchOnMount: true,         // refresh when component remounts
+      refetchOnReconnect: true,     // refresh when network reconnects
+      retry: 2,               // do not retry on failure
     });
 
   const today = new Date();

@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CaseCard } from "@/components/case/case-card";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CaseFormModal } from "@/components/case/case-form-modal";
 import { DiaryEntryModal } from "@/components/diary/diary-entry-modal";
 import type { Case } from "@shared/schema";
 import { useAuth } from "react-oidc-context";
+import { SwipeableCaseCard } from "@/components/SwipeableCard/swipeable-card";
+import { CaseCard } from "@/components/case/case-card";
 
 export function Cases() {
   const [activeFilter, setActiveFilter] = useState("all");
@@ -13,6 +15,7 @@ export function Cases() {
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const auth = useAuth();
+  const queryClient = useQueryClient();
 
 
   async function fetchCases() {
@@ -30,10 +33,30 @@ export function Cases() {
   const { data: cases = [], isLoading } = useQuery<Case[]>({
       queryKey: ["/api/cases"],
       queryFn: () => fetchCases(),
-      refetchOnWindowFocus: false, // disable auto refetch on focus
-      refetchOnReconnect: false,   // disable refetch on network reconnect
-      retry: 1, // optional, retry once only
+      staleTime: 0,                 // always considered stale
+      refetchOnWindowFocus: true,   // refresh when tab regains focus
+      refetchOnMount: true,         // refresh when component remounts
+      refetchOnReconnect: true,     // refresh when network reconnects
+      retry: 2,               // do not retry on failure
     });
+
+
+    // Add delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (caseId: string) => {
+      const token = auth.user?.id_token;
+      const res = await fetch(`/api/cases/${caseId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error("Failed to delete case");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+    },
+  });
 
 
   const filteredCases = cases.filter(caseItem => {
@@ -99,11 +122,12 @@ export function Cases() {
 
         {/* Cases List */}
         <div className="space-y-4">
-          {filteredCases.length > 0 ? (
+           {filteredCases.length > 0 ? (
             filteredCases.map(caseItem => (
-              <CaseCard 
-                key={caseItem.id} 
+              <CaseCard
+                key={caseItem.id}
                 case={caseItem}
+                onDelete={(id) => deleteMutation.mutate(id)}
                 onAddDiaryEntry={(caseId) => {
                   setSelectedCaseId(caseId);
                   setShowDiaryModal(true);

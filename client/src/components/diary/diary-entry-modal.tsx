@@ -79,6 +79,9 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
       return response.json();
     },
     onSuccess: async (newEntry) => {
+       // Force an immediate refetch instead of waiting for cache state
+      await queryClient.invalidateQueries({ queryKey: ["/api/calendar/hearings"], refetchType: "active" });
+      await queryClient.invalidateQueries({ queryKey: ["/api/cases"], refetchType: "active" });
       // Upload file if selected
       if (selectedFile) {
         const formData = new FormData();
@@ -88,9 +91,6 @@ export function DiaryEntryModal({ isOpen, onClose, caseId }: DiaryEntryModalProp
         await apiRequest("POST", "/api/documents", formData, token);
       }
 
-      queryClient.invalidateQueries({ queryKey: ["/api/calendar/hearings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/diary-entries"] });
-      
       toast({
         title: "Success",
         description: "Diary entry created successfully",
