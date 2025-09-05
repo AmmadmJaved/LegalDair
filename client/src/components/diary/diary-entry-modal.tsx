@@ -29,6 +29,7 @@ import { useAuth } from "react-oidc-context";
 import { CaseFormModal } from "../case/case-form-modal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Info } from "lucide-react";
+import { useCases } from "@/hooks/useCases";
 
 const diaryEntryFormSchema = z.object({
   caseId: z.string().min(1, "Case selection is required"),
@@ -53,12 +54,13 @@ export function DiaryEntryModal({ isOpen, onClose, caseId, onSuccess }: DiaryEnt
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const { cases, isLoading, error } = useCases();
    const auth = useAuth();
     const token = auth.user?.id_token; // or access_token depending on your config
 
-  const { data: cases = [] } = useQuery<Case[]>({
-    queryKey: ["/api/cases"],
-  });
+  // const { data: cases = [] } = useQuery<Case[]>({
+  //   queryKey: ["/api/cases"],
+  // });
 
   const form = useForm<DiaryEntryFormData>({
     resolver: zodResolver(diaryEntryFormSchema),
@@ -80,7 +82,10 @@ export function DiaryEntryModal({ isOpen, onClose, caseId, onSuccess }: DiaryEnt
     onSuccess: async (newEntry) => {
        // Force an immediate refetch instead of waiting for cache state
       await queryClient.invalidateQueries({ queryKey: ["/api/calendar/hearings"], refetchType: "active" });
-      await queryClient.invalidateQueries({ queryKey: ["/api/cases"], refetchType: "active" });
+      queryClient.setQueryData(["/api/cases"], (old: any) => {
+        if (!old) return [newEntry];
+        return [...old, newEntry];
+      });
       // Upload file if selected
       if (selectedFile) {
         const formData = new FormData();
@@ -178,7 +183,7 @@ export function DiaryEntryModal({ isOpen, onClose, caseId, onSuccess }: DiaryEnt
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {cases.map((caseItem) => (
+                      {cases.map((caseItem:any) => (
                         <SelectItem key={caseItem.id} value={caseItem.id}>
                           {caseItem.title}
                         </SelectItem>
@@ -196,7 +201,7 @@ export function DiaryEntryModal({ isOpen, onClose, caseId, onSuccess }: DiaryEnt
               name="hearingSummary"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Hearing Summary</FormLabel>
+                  <FormLabel>Proceedings Summary</FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="Brief summary of today's proceedings..."

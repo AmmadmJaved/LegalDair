@@ -8,6 +8,7 @@ import type { Case } from "@shared/schema";
 import { useAuth } from "react-oidc-context";
 import { SwipeableCaseCard } from "@/components/SwipeableCard/swipeable-card";
 import { CaseCard } from "@/components/case/case-card";
+import { useCases } from "@/hooks/useCases";
 
 export function Cases() {
   const [activeFilter, setActiveFilter] = useState("all");
@@ -15,31 +16,32 @@ export function Cases() {
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [isRefreshData, setIsRefreshData] = useState<boolean>(false);
+  const { cases, isLoading, error } = useCases();
   const auth = useAuth();
   const queryClient = useQueryClient();
 
 
-  async function fetchCases() {
-    const token = auth.user?.id_token; // or access_token depending on your config
-    const res = await fetch("/api/cases", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!res.ok) throw new Error("Unauthorized");
-    return res.json();
-  }
+  // async function fetchCases() {
+  //   const token = auth.user?.id_token; // or access_token depending on your config
+  //   const res = await fetch("/api/cases", {
+  //     headers: {
+  //       Authorization: `Bearer ${token}`,
+  //     },
+  //   });
+  //   if (!res.ok) throw new Error("Unauthorized");
+  //   return res.json();
+  // }
 
 
-  const { data: cases = [], isLoading } = useQuery<Case[]>({
-      queryKey: ["/api/cases"],
-      queryFn: () => fetchCases(),
-      staleTime: 0,                 // always considered stale
-      refetchOnWindowFocus: true,   // refresh when tab regains focus
-      refetchOnMount: true,         // refresh when component remounts
-      refetchOnReconnect: true,     // refresh when network reconnects
-      retry: 2,               // do not retry on failure
-    });
+  // const { data: cases = [], isLoading } = useQuery<Case[]>({
+  //     queryKey: ["/api/cases"],
+  //     queryFn: () => fetchCases(),
+  //     staleTime: 0,                 // always considered stale
+  //     refetchOnWindowFocus: true,   // refresh when tab regains focus
+  //     refetchOnMount: true,         // refresh when component remounts
+  //     refetchOnReconnect: true,     // refresh when network reconnects
+  //     retry: 2,               // do not retry on failure
+  //   });
 
 
     // Add delete mutation
@@ -71,7 +73,7 @@ export function Cases() {
   }, [isRefreshData, queryClient]);
 
 
-  const filteredCases = cases.filter(caseItem => {
+  const filteredCases = cases.filter((caseItem: Case) => {
     switch (activeFilter) {
       case "urgent":
         return caseItem.priority === "urgent" || caseItem.priority === "critical";
@@ -135,7 +137,7 @@ export function Cases() {
         {/* Cases List */}
         <div className="space-y-4">
            {filteredCases.length > 0 ? (
-            filteredCases.map(caseItem => (
+            filteredCases.map((caseItem: Case) => (
               <CaseCard
                 key={caseItem.id}
                 case={caseItem}

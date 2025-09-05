@@ -25,6 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "react-oidc-context";
+import { useCases } from "@/hooks/useCases";
 
 const caseFormSchema = z.object({
   title: z.string().min(1, "Case title is required"),
@@ -48,7 +49,7 @@ export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
   const queryClient = useQueryClient();
   const auth = useAuth();
   const token = auth.user?.id_token; // or access_token depending on your config
-  
+  const { cases, createCase } = useCases();
   const form = useForm<CaseFormData>({
     resolver: zodResolver(caseFormSchema),
     defaultValues: {
@@ -62,38 +63,44 @@ export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
     },
   });
  
-  const createCaseMutation = useMutation({
-    mutationFn: async (data: CaseFormData) => {
-      const response = await apiRequest("POST", "/api/cases", data, token);
-      debugger;
-      return response.json();
-    },
-    onSuccess: () => {
+  // const createCaseMutation = useMutation({
+  //   mutationFn: async (data: CaseFormData) => {
+  //     const response = await apiRequest("POST", "/api/cases", data, token);
+  //     debugger;
+  //     return response.json();
+  //   },
+  //   onSuccess: () => {
 
-       setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/calendar/hearings"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/diary-entries"] });
-      }, 500);
+  //      setTimeout(() => {
+  //       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+  //       queryClient.invalidateQueries({ queryKey: ["/api/calendar/hearings"] });
+  //       queryClient.invalidateQueries({ queryKey: ["/api/diary-entries"] });
+  //     }, 500);
       
-      toast({
+  //     toast({
+  //       title: "Success",
+  //       description: "Case created successfully",
+  //     });
+  //     form.reset();
+  //     onClose();
+  //   },
+  //   onError: (error) => {
+  //     toast({
+  //       title: "Error",
+  //       description: error.message || "Failed to create case",
+  //       variant: "destructive",
+  //     });
+  //   },
+  // });
+
+  const onSubmit = (data: CaseFormData) => {
+    createCase.mutate(data);
+    toast({
         title: "Success",
         description: "Case created successfully",
       });
       form.reset();
       onClose();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create case",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: CaseFormData) => {
-    createCaseMutation.mutate(data);
   };
 
   return (
@@ -226,9 +233,9 @@ export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
               <Button 
                 type="submit" 
                 className="flex-1 bg-primary-600 hover:bg-primary-700 text-white"
-                disabled={createCaseMutation.isPending}
+                disabled={createCase.isPending}
               >
-                {createCaseMutation.isPending ? "Creating..." : "Create Case"}
+                {createCase.isPending ? "Creating..." : "Create Case"}
               </Button>
             </div>
           </form>
