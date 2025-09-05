@@ -24,7 +24,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Case } from "@shared/schema";
 import { useAuth } from "react-oidc-context";
 import { CaseFormModal } from "../case/case-form-modal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";

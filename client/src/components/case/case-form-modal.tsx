@@ -19,12 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "react-oidc-context";
 import { useCases } from "@/hooks/useCases";
 
 const caseFormSchema = z.object({
@@ -46,10 +41,8 @@ interface CaseFormModalProps {
 
 export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const auth = useAuth();
-  const token = auth.user?.id_token; // or access_token depending on your config
-  const { cases, createCase } = useCases();
+
+  const { createCase } = useCases();
   const form = useForm<CaseFormData>({
     resolver: zodResolver(caseFormSchema),
     defaultValues: {
@@ -57,7 +50,7 @@ export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
       clientName: "",
       court: "",
       caseNumber: "",
-      nextHearingDate: "",
+      nextHearingDate: new Date().toISOString().split("T")[0], // default to today's date
       priority: "normal",
       isPrivate: true,
     },
@@ -168,21 +161,21 @@ export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
               )}
             />
 
-            <FormField
+            {/* <FormField
               control={form.control}
               name="nextHearingDate"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Next Hearing Date (Optional)</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="hidden" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
-            />
+            /> */}
 
-            <FormField
+            {/* <FormField
               control={form.control}
               name="priority"
               render={({ field }) => (
@@ -203,8 +196,8 @@ export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
                   <FormMessage />
                 </FormItem>
               )}
-            />
-
+            /> */}
+{/* 
             <FormField
               control={form.control}
               name="isPrivate"
@@ -224,7 +217,7 @@ export function CaseFormModal({ isOpen, onClose }: CaseFormModalProps) {
                   </FormControl>
                 </FormItem>
               )}
-            />
+            /> */}
 
             <div className="flex space-x-3 pt-4">
               <Button type="button" variant="outline" onClick={onClose} className="flex-1">
