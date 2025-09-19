@@ -16,11 +16,25 @@ import.meta.env;
 
 
 function Router() {
-  const  { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) {
-    // Show nothing or a loading spinner while checking stored token
-    return <div>Loading...</div>;
-  }
+  const auth = useAuth();
+  const { isAuthenticated, isLoading } = auth;
+
+  // 🔄 Try silent login when token expires
+  useEffect(() => {
+    if (!auth.user) return;
+
+    if (auth.user.expired) {
+      auth
+        .signinSilent()
+        .then((user) => {
+          console.log("Silent renew success:", user);
+        })
+        .catch((err) => {
+          console.warn("Silent renew failed:", err);
+          // ❌ don't force logout here — let user click Login when needed
+        });
+    }
+  }, [auth.user, auth]);
   usePreventBack();
   const subscription = usePushSubscription();
 
